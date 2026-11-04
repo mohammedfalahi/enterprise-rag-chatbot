@@ -10,8 +10,11 @@ import logging
 import os
 from typing import Any
 from google import genai
+from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.observability.redaction import scrub_sensitive_data
+from app.observability.tracing import trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -63,24 +66,100 @@ async def rewrite_query_for_retrieval(
 
     prompt = build_rewrite_prompt(clean_question, history_messages)
 
-    try:
-        client = genai.Client(
-            api_key=settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY"),
-            vertexai=False,
-        )
-        response = client.models.generate_content(
-            model=settings.query_rewrite_model,
-            contents=prompt,
-        )
-        if response and response.text:
-            rewritten = response.text.strip().strip('"\'')
-            if rewritten:
-                return rewritten
-    except Exception as e:
-        logger.warning(
-            "Query rewriting failed, falling back to original query: %s",
-            e,
-            exc_info=True,
-        )
+    use_groq = bool(settings.USE_GROQ_FOR_QUERY_REWRITE)
+    model_name = settings.groq_query_rewrite_model if use_groq else settings.query_rewrite_model
 
-    return clean_question
+    trace_input: dict[str, Any] = {
+        "question_chars": len(clean_question),
+        "history_turns": len(history_messages),
+    }
+    if settings.langfuse_capture_content:
+        trace_input["original_query"] = scrub_sensitive_data(clean_question)
+
+    with trace_span(
+        name="query_rewriting",
+        as_type="generation",
+        model=model_name,
+        input=trace_input,
+    ) as rewrite_span:
+        try:
+            rewritten_text = ""
+            usage_details: dict[str, int] = {}
+
+            if use_groq:
+                groq_client = AsyncOpenAI(
+                    api_key=settings.GROQ_API_KEY or os.environ.get("GROQ_API_KEY") or "none",
+                    base_url=settings.GROQ_BASE_URL,
+                )
+                response = await groq_client.chat.completions.create(
+                    model=model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.0,
+                )
+                if response and response.choices:
+                    first_choice = response.choices[0]
+                    if first_choice.message and first_choice.message.content:
+                        rewritten_text = first_choice.message.content
+
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    for source, target in (
+                        ("prompt_tokens", "input"),
+                        ("completion_tokens", "output"),
+                        ("total_tokens", "total"),
+                    ):
+                        token_count = getattr(usage, source, None)
+                        if token_count is not None:
+                            usage_details[target] = int(token_count)
+            else:
+                client = genai.Client(
+                    api_key=settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY"),
+                    vertexai=False,
+                )
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                if response and response.text:
+                    rewritten_text = response.text
+
+                usage = getattr(response, "usage_metadata", None)
+                if usage is not None:
+                    for source, target in (
+                        ("prompt_token_count", "input"),
+                        ("candidates_token_count", "output"),
+                        ("total_token_count", "total"),
+                    ):
+                        token_count = getattr(usage, source, None)
+                        if token_count is not None:
+                            usage_details[target] = int(token_count)
+
+            if rewritten_text:
+                rewritten = rewritten_text.strip().strip('"\'')
+                if rewritten:
+                    rewrite_output: dict[str, Any] = {
+                        "rewritten_query_chars": len(rewritten),
+                        "fallback": False,
+                    }
+                    if settings.langfuse_capture_content:
+                        rewrite_output["rewritten_query"] = scrub_sensitive_data(rewritten)
+                    rewrite_span.update(
+                        output=rewrite_output,
+                        usage_details=usage_details or None,
+                    )
+                    return rewritten
+        except Exception as exc:
+            logger.warning(
+                "Query rewriting failed (%s); falling back to original query.",
+                type(exc).__name__,
+            )
+            rewrite_span.update(
+                output={"fallback": True},
+                level="WARNING",
+                status_message=type(exc).__name__,
+            )
+            return clean_question
+
+        logger.warning("Query rewriting returned no usable text; using the original question.")
+        rewrite_span.update(output={"fallback": True})
+        return clean_question

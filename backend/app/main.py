@@ -4,13 +4,20 @@ from app.db.connection import init_db_pool, close_db_pool
 from app.api.chat import router as chat_router
 from app.api.documents import router as documents_router
 from app.api.conversations import router as conversations_router
+from app.observability.tracing import flush_tracing, shutdown_tracing
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db_pool()
-    yield
-    await close_db_pool()
+    try:
+        yield
+    finally:
+        try:
+            await close_db_pool()
+        finally:
+            flush_tracing()
+            shutdown_tracing()
 
 app = FastAPI(title="Enterprise Knowledge Intelligence Assistant", lifespan=lifespan)
 

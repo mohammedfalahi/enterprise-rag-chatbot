@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     chat_llm_model: str = "gemini-3.5-flash-lite"
     GEMINI_API_KEY: str = ""
 
+    # Alternative LLM Provider Configuration (Groq - OpenAI-compatible)
+    USE_GROQ_FOR_QUERY_REWRITE: bool = False
+    USE_GROQ_FOR_GENERATION: bool = False
+    GROQ_API_KEY: str = ""
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    groq_query_rewrite_model: str = "openai/gpt-oss-120b"
+    groq_chat_llm_model: str = "openai/gpt-oss-120b"
+    OPENROUTER_API_KEY: str = ""
+
     # Multi-Turn Conversation Memory
     conversation_history_window: int = 9
     
@@ -54,6 +63,7 @@ class Settings(BaseSettings):
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None
     langfuse_base_url: str = "https://cloud.langfuse.com"
+    langfuse_capture_content: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

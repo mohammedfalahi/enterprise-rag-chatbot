@@ -83,6 +83,15 @@ class TestRedaction(unittest.TestCase):
         self.assertNotIn(gemini_key, scrubbed)
         self.assertNotIn(langfuse_key, scrubbed)
 
+    def test_scrub_inline_secrets_and_private_keys(self):
+        private_key = "-----BEGIN PRIVATE KEY-----\nprivate-key-data\n-----END PRIVATE KEY-----"
+        scrubbed = scrub_string(
+            f"password=example-password api_key='example-key' {private_key}"
+        )
+        self.assertNotIn("example-password", scrubbed)
+        self.assertNotIn("example-key", scrubbed)
+        self.assertNotIn("private-key-data", scrubbed)
+
     def test_scrub_sensitive_dict_keys(self):
         """Values under sensitive dictionary keys are replaced with REDACTED_PLACEHOLDER."""
         payload = {

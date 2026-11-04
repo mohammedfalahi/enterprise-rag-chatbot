@@ -38,38 +38,48 @@ def get_query_embedding(query: str, api_key: str | None = None) -> list[float]:
     Normalizes query strings to maximize cache hit rates for identical queries.
     """
     normalized_key = " ".join(query.strip().lower().split())
-    with _cache_lock:
-        if normalized_key in _QUERY_EMBEDDING_CACHE:
-            # Re-insert to mark as recently used (LRU)
-            val = _QUERY_EMBEDDING_CACHE.pop(normalized_key)
-            _QUERY_EMBEDDING_CACHE[normalized_key] = val
-            return val
-
-    if api_key:
-        client = genai.Client(api_key=api_key, vertexai=False)
-    else:
-        # Preserve existing Gemini Embedding 001 through Vertex AI
-        client = genai.Client()
-    response = client.models.embed_content(
+    with trace_span(
+        name="query_embedding",
+        as_type="embedding",
         model=settings.embedding_model,
-        contents=query,
-        config=types.EmbedContentConfig(
-            task_type="RETRIEVAL_QUERY",
-            output_dimensionality=settings.embedding_dim,
-        ),
-    )
-    if not response.embeddings or not response.embeddings[0].values:
-        raise ValueError("Failed to retrieve embeddings from Gemini model")
+        input={"query_chars": len(query), "dimensions": settings.embedding_dim},
+    ) as embedding_span:
+        with _cache_lock:
+            if normalized_key in _QUERY_EMBEDDING_CACHE:
+                # Re-insert to mark as recently used (LRU)
+                val = _QUERY_EMBEDDING_CACHE.pop(normalized_key)
+                _QUERY_EMBEDDING_CACHE[normalized_key] = val
+                embedding_span.update(
+                    output={"cache_hit": True, "dimensions": len(val)}
+                )
+                return val
 
-    vec = [float(x) for x in response.embeddings[0].values]
+        if api_key:
+            client = genai.Client(api_key=api_key, vertexai=False)
+        else:
+            # Preserve existing Gemini Embedding 001 through Vertex AI
+            client = genai.Client()
+        response = client.models.embed_content(
+            model=settings.embedding_model,
+            contents=query,
+            config=types.EmbedContentConfig(
+                task_type="RETRIEVAL_QUERY",
+                output_dimensionality=settings.embedding_dim,
+            ),
+        )
+        if not response.embeddings or not response.embeddings[0].values:
+            raise ValueError("Failed to retrieve embeddings from Gemini model")
 
-    with _cache_lock:
-        if len(_QUERY_EMBEDDING_CACHE) >= _MAX_QUERY_CACHE_SIZE:
-            first_key = next(iter(_QUERY_EMBEDDING_CACHE))
-            del _QUERY_EMBEDDING_CACHE[first_key]
-        _QUERY_EMBEDDING_CACHE[normalized_key] = vec
+        vec = [float(x) for x in response.embeddings[0].values]
 
-    return vec
+        with _cache_lock:
+            if len(_QUERY_EMBEDDING_CACHE) >= _MAX_QUERY_CACHE_SIZE:
+                first_key = next(iter(_QUERY_EMBEDDING_CACHE))
+                del _QUERY_EMBEDDING_CACHE[first_key]
+            _QUERY_EMBEDDING_CACHE[normalized_key] = vec
+
+        embedding_span.update(output={"cache_hit": False, "dimensions": len(vec)})
+        return vec
 
 
 def clear_query_embedding_cache() -> None:
@@ -92,7 +102,9 @@ class RetrievalResult(BaseModel):
     heading_path: list[str]
     content: str
     dense_rank: int | None
+    dense_distance: float | None = None
     fts_rank: int | None
+    fts_score: float | None = None
     rrf_score: float
     rerank_score: float
 
@@ -105,7 +117,9 @@ class _Candidate:
     heading_path: list[str]
     content: str
     dense_rank: int | None = None
+    dense_distance: float | None = None
     fts_rank: int | None = None
+    fts_score: float | None = None
 
 
 def _sync_cross_encoder_predict(
@@ -145,9 +159,8 @@ async def search_documents(
         name="hybrid_search_documents",
         as_type="retriever",
         input={
-            "query": query,
-            "tenant_id": tenant_id,
             "user_roles": user_roles,
+            "query_chars": len(query),
             "top_k": top_k,
             "min_rerank_score": min_rerank_score,
         },
@@ -157,9 +170,8 @@ async def search_documents(
             name="dense_retrieval_pgvector",
             as_type="retriever",
             input={
-                "query": query,
+                "query_chars": len(query),
                 "embedding_model": settings.embedding_model,
-                "tenant_id": tenant_id,
                 "limit": 10,
             },
         ) as dense_span:
@@ -185,7 +197,7 @@ async def search_documents(
 
                     dense_rows = await cur.fetchall()
                     for rank, row in enumerate(dense_rows, start=1):
-                        chunk_id, document_id, title, heading_path, content, _dist = row
+                        chunk_id, document_id, title, heading_path, content, distance = row
                         candidates[chunk_id] = _Candidate(
                             chunk_id=chunk_id,
                             document_id=str(document_id),
@@ -193,14 +205,27 @@ async def search_documents(
                             heading_path=heading_path,
                             content=content,
                             dense_rank=rank,
+                            dense_distance=float(distance),
                         )
-            dense_span.update(output={"dense_candidates_count": len(dense_rows)})
+            dense_span.update(
+                output={
+                    "dense_candidates_count": len(dense_rows),
+                    "scores": [
+                        {
+                            "rank": rank,
+                            "chunk_id": str(row[0]),
+                            "distance": float(row[5]),
+                        }
+                        for rank, row in enumerate(dense_rows, start=1)
+                    ],
+                }
+            )
 
         # 2. Fetch top 10 sparse FTS candidates (Postgres plainto_tsquery + ts_rank_cd)
         with trace_span(
-            name="sparse_retrieval_bm25_fts",
+            name="sparse_retrieval_postgres_fts",
             as_type="retriever",
-            input={"query": query, "tenant_id": tenant_id, "limit": 10},
+            input={"query_chars": len(query), "limit": 10},
         ) as sparse_span:
             async with get_db_connection() as conn:
                 async with conn.cursor() as cur:
@@ -221,9 +246,10 @@ async def search_documents(
 
                     fts_rows = await cur.fetchall()
                     for rank, row in enumerate(fts_rows, start=1):
-                        chunk_id, document_id, title, heading_path, content, _ts_rank = row
+                        chunk_id, document_id, title, heading_path, content, ts_rank = row
                         if chunk_id in candidates:
                             candidates[chunk_id].fts_rank = rank
+                            candidates[chunk_id].fts_score = float(ts_rank)
                         else:
                             candidates[chunk_id] = _Candidate(
                                 chunk_id=chunk_id,
@@ -232,8 +258,21 @@ async def search_documents(
                                 heading_path=heading_path,
                                 content=content,
                                 fts_rank=rank,
+                                fts_score=float(ts_rank),
                             )
-            sparse_span.update(output={"sparse_candidates_count": len(fts_rows)})
+            sparse_span.update(
+                output={
+                    "sparse_candidates_count": len(fts_rows),
+                    "scores": [
+                        {
+                            "rank": rank,
+                            "chunk_id": str(row[0]),
+                            "score": float(row[5]),
+                        }
+                        for rank, row in enumerate(fts_rows, start=1)
+                    ],
+                }
+            )
 
         if not candidates:
             retriever_span.update(output={"results_count": 0, "refused": True})
@@ -260,7 +299,20 @@ async def search_documents(
                 fused_scores.items(), key=lambda item: item[1], reverse=True
             )
             top_5_fused = sorted_fused[:5]
-            rrf_span.update(output={"fused_top_5": [cid for cid, _ in top_5_fused]})
+            rrf_span.update(
+                output={
+                    "fused_top_5": [
+                        {
+                            "rank": rank,
+                            "chunk_id": str(chunk_id),
+                            "score": round(score, 8),
+                            "dense_rank": candidates[chunk_id].dense_rank,
+                            "fts_rank": candidates[chunk_id].fts_rank,
+                        }
+                        for rank, (chunk_id, score) in enumerate(top_5_fused, start=1)
+                    ]
+                }
+            )
 
         # 4. Score using MS-MARCO Cross-Encoder and apply refusal gate
         final_results = []
@@ -300,7 +352,9 @@ async def search_documents(
                         heading_path=c.heading_path,
                         content=c.content,
                         dense_rank=c.dense_rank,
+                        dense_distance=c.dense_distance,
                         fts_rank=c.fts_rank,
+                        fts_score=c.fts_score,
                         rrf_score=rrf_score,
                         rerank_score=rerank_score,
                     )
@@ -310,10 +364,26 @@ async def search_documents(
             final_results.sort(key=lambda x: x.rerank_score, reverse=True)
             top_score = final_results[0].rerank_score if final_results else None
             refused = top_score is None or top_score < min_rerank_score
-            rerank_span.update(output={"top_rerank_score": top_score, "refused": refused})
+            rerank_span.update(
+                output={
+                    "top_rerank_score": top_score,
+                    "refused": refused,
+                    "scores": [
+                        {
+                            "rank": rank,
+                            "chunk_id": result.chunk_id,
+                            "rerank_score": result.rerank_score,
+                            "rrf_score": result.rrf_score,
+                            "dense_rank": result.dense_rank,
+                            "fts_rank": result.fts_rank,
+                        }
+                        for rank, result in enumerate(final_results, start=1)
+                    ],
+                }
+            )
 
         # Refusal gate check on the absolute best candidate
-        if final_results[0].rerank_score < min_rerank_score:
+        if not final_results or final_results[0].rerank_score < min_rerank_score:
             retriever_span.update(
                 output={"results_count": 0, "refused": True, "top_rerank_score": top_score}
             )
@@ -325,7 +395,19 @@ async def search_documents(
                 "results_count": len(returned),
                 "refused": False,
                 "top_rerank_score": returned[0].rerank_score,
-                "chunk_ids": [r.chunk_id for r in returned],
+                "scores": [
+                    {
+                        "rank": rank,
+                        "chunk_id": result.chunk_id,
+                        "rerank_score": result.rerank_score,
+                        "rrf_score": result.rrf_score,
+                        "dense_rank": result.dense_rank,
+                        "dense_distance": result.dense_distance,
+                        "fts_rank": result.fts_rank,
+                        "fts_score": result.fts_score,
+                    }
+                    for rank, result in enumerate(returned, start=1)
+                ],
             }
         )
         return returned

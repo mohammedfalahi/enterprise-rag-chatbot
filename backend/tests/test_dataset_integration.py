@@ -4,6 +4,7 @@ Unit tests for the datasets-test benchmark integration, RBAC mapping, and evalua
 
 import unittest
 import uuid
+import json
 from pathlib import Path
 import sys
 
@@ -14,7 +15,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from scripts.ingest_benchmark import doc_id_to_uuid
 from app.rag.chunker import chunk_document_text
-from scripts.run_evals import evaluate_golden, evaluate_injections
+from scripts.run_evals import evaluate_golden, evaluate_injections, ranking_metrics_at_k
 from app.rag.hybrid_search import RetrievalResult
 
 
@@ -56,12 +57,8 @@ If anything goes wrong, contact the SRE team.
             self.assertEqual(c.document_id, doc_uuid)
 
     def test_rbac_roles_mapping(self):
-        # Verify roles from roles.json match expected hierarchy
-        roles_hierarchy = {
-            "internal": ["employee", "sales_rep", "manager", "executive"],
-            "confidential": ["manager", "executive"],
-            "restricted": ["executive"],
-        }
+        roles_path = Path("/Users/falahi/datasets-test/data/roles.json")
+        roles_hierarchy = json.loads(roles_path.read_text(encoding="utf-8"))
         
         # An employee should only see internal documents
         employee_roles = {"employee"}
@@ -80,6 +77,21 @@ If anything goes wrong, contact the SRE team.
         self.assertTrue(bool(exec_roles & set(roles_hierarchy["internal"])))
         self.assertTrue(bool(exec_roles & set(roles_hierarchy["confidential"])))
         self.assertTrue(bool(exec_roles & set(roles_hierarchy["restricted"])))
+
+    def test_document_ranking_metrics_are_deduplicated(self):
+        metrics = ranking_metrics_at_k(
+            ["irrelevant", "irrelevant", "gold-a", "gold-b"],
+            {"gold-a", "gold-b"},
+            k=3,
+        )
+        self.assertEqual(metrics["precision@3"], 2 / 3)
+        self.assertEqual(metrics["recall@3"], 1.0)
+        self.assertEqual(metrics["mrr"], 1 / 2)
+        self.assertAlmostEqual(metrics["ndcg@3"], 0.6934264)
+
+    def test_document_ranking_metrics_reject_invalid_k(self):
+        with self.assertRaises(ValueError):
+            ranking_metrics_at_k(["doc"], {"doc"}, k=0)
 
     def test_evaluation_recall_metric(self):
         import asyncio
@@ -113,6 +125,9 @@ If anything goes wrong, contact the SRE team.
         )
         self.assertEqual(results["permission_leakage_count"], 0)
         self.assertGreater(results["mean_recall_at_k"], 0.0)
+        self.assertIn("precision@5", results["retrieval_metrics"])
+        self.assertIn("mrr", results["retrieval_metrics"])
+        self.assertIn("ndcg@5", results["retrieval_metrics"])
 
     def test_injection_defense_eval(self):
         import asyncio
@@ -130,6 +145,60 @@ If anything goes wrong, contact the SRE team.
         )
         self.assertEqual(results["refusals"], 5)
         self.assertEqual(results["refusal_rate"], 1.0)
+
+    def test_bounded_injection_retrieval_is_not_counted_as_refusal(self):
+        import asyncio
+
+        async def mock_bounded_retriever(query, tenant, roles, top_k=5):
+            return [
+                RetrievalResult(
+                    chunk_id="chunk-01",
+                    document_id="doc-01",
+                    title="Mock Doc",
+                    heading_path=[],
+                    content="Accessible content",
+                    dense_rank=1,
+                    fts_rank=1,
+                    rrf_score=0.03,
+                    rerank_score=2.5,
+                )
+            ]
+
+        results = asyncio.run(
+            evaluate_injections(
+                injection_path="/Users/falahi/datasets-test/data/injection.jsonl",
+                tenant_id="test_tenant",
+                top_k=5,
+                mock_retriever=mock_bounded_retriever,
+            )
+        )
+        self.assertEqual(results["refusals"], 0)
+        self.assertEqual(results["refusal_rate"], 0.0)
+        self.assertEqual(results["bounded_unverified_count"], 5)
+
+    def test_empty_evaluation_sets_report_undefined_metrics(self):
+        import asyncio
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as golden_file:
+            golden_results = asyncio.run(
+                evaluate_golden(
+                    golden_path=golden_file.name,
+                    tenant_id="test_tenant",
+                    mock_retriever=None,
+                )
+            )
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as injection_file:
+            injection_results = asyncio.run(
+                evaluate_injections(
+                    injection_path=injection_file.name,
+                    tenant_id="test_tenant",
+                    mock_retriever=None,
+                )
+            )
+        self.assertIsNone(golden_results["mean_recall_at_k"])
+        self.assertIsNone(golden_results["permission_leakage_rate"])
+        self.assertIsNone(injection_results["refusal_rate"])
 
 
 if __name__ == "__main__":

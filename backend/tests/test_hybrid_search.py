@@ -9,12 +9,14 @@ Covers:
 
 from __future__ import annotations
 
+import asyncio
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.rag.hybrid_search import (
     clear_query_embedding_cache,
     get_query_embedding,
+    search_documents,
 )
 
 
@@ -74,6 +76,77 @@ class TestQueryEmbeddingCache(unittest.TestCase):
         self.assertEqual(res1, [0.1, 0.2])
         self.assertEqual(res2, [0.3, 0.4])
         self.assertEqual(mock_client.models.embed_content.call_count, 2)
+
+    @patch("app.rag.hybrid_search.trace_span")
+    @patch("app.rag.hybrid_search.genai.Client")
+    def test_embedding_trace_records_metadata_not_query_text(
+        self, mock_client_cls, mock_trace_span
+    ):
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+        mock_client.models.embed_content.return_value = self._mock_gemini_response([0.1])
+
+        get_query_embedding("private question content")
+
+        trace_input = mock_trace_span.call_args.kwargs["input"]
+        self.assertEqual(trace_input["query_chars"], len("private question content"))
+        self.assertNotIn("query", trace_input)
+
+    def test_retrieval_traces_include_chunk_ids_and_scores(self):
+        cursor = MagicMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchall = AsyncMock(
+            side_effect=[
+                [("chunk-a", "doc-a", "Title A", [], "content", 0.12)],
+                [
+                    ("chunk-a", "doc-a", "Title A", [], "content", 0.8),
+                    ("chunk-b", "doc-b", "Title B", [], "content", 0.4),
+                ],
+            ]
+        )
+        connection = MagicMock()
+        connection.cursor.return_value.__aenter__.return_value = cursor
+        connection_context = MagicMock()
+        connection_context.__aenter__.return_value = connection
+
+        spans = {}
+
+        def make_span(name, **_kwargs):
+            context = MagicMock()
+            span = MagicMock()
+            context.__enter__.return_value = span
+            spans[name] = span
+            return context
+
+        with (
+            patch("app.rag.hybrid_search.get_query_embedding", return_value=[0.1]),
+            patch(
+                "app.rag.hybrid_search.get_db_connection",
+                return_value=connection_context,
+            ),
+            patch(
+                "app.rag.hybrid_search._sync_cross_encoder_predict",
+                return_value=[2.5, 1.5],
+            ),
+            patch("app.rag.hybrid_search.trace_span", side_effect=make_span),
+        ):
+            results = asyncio.run(
+                search_documents("question", "tenant", ["employee"], top_k=2)
+            )
+
+        self.assertEqual(len(results), 2)
+        dense_output = spans["dense_retrieval_pgvector"].update.call_args.kwargs["output"]
+        sparse_output = spans["sparse_retrieval_postgres_fts"].update.call_args.kwargs["output"]
+        rrf_output = spans["rrf_fusion"].update.call_args.kwargs["output"]
+        rerank_output = spans["cross_encoder_rerank_cutoff"].update.call_args.kwargs["output"]
+        self.assertEqual(dense_output["scores"][0]["chunk_id"], "chunk-a")
+        self.assertEqual(dense_output["scores"][0]["distance"], 0.12)
+        self.assertEqual(sparse_output["scores"][1]["chunk_id"], "chunk-b")
+        self.assertEqual(sparse_output["scores"][1]["score"], 0.4)
+        self.assertIn("chunk_id", rrf_output["fused_top_5"][0])
+        self.assertIn("score", rrf_output["fused_top_5"][0])
+        self.assertEqual(rerank_output["scores"][0]["chunk_id"], "chunk-a")
+        self.assertEqual(rerank_output["scores"][0]["rerank_score"], 2.5)
 
     @patch("app.rag.hybrid_search.genai.Client")
     def test_clear_query_embedding_cache(self, mock_client_cls):

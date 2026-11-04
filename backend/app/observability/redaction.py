@@ -35,6 +35,13 @@ BEARER_PATTERN = re.compile(r"Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*", re.IGNORECASE)
 JWT_PATTERN = re.compile(r"eyJ[A-Za-z0-9-_=]+\.eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+")
 API_KEY_PATTERN = re.compile(r"(?:sk|pk)-(?:lf-)?[A-Za-z0-9_\-]{16,}")
 GEMINI_KEY_PATTERN = re.compile(r"AIzaSy[A-Za-z0-9_\-]{33}")
+SECRET_ASSIGNMENT_PATTERN = re.compile(
+    r"""(?i)\b(?:api[_-]?key|client[_-]?secret|secret|password|passwd|private[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token)\b\s*[:=]\s*(?:Bearer\s+)?(?:"[^"]*"|'[^']*'|[^\s,;]+)"""
+)
+PRIVATE_KEY_BLOCK_PATTERN = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----",
+    re.DOTALL,
+)
 
 REDACTED_PLACEHOLDER = "[REDACTED]"
 
@@ -50,7 +57,9 @@ def is_sensitive_key(key: str) -> bool:
 
 def scrub_string(value: str) -> str:
     """Scrub sensitive credential patterns from string content."""
-    val = BEARER_PATTERN.sub("Bearer [REDACTED]", value)
+    val = PRIVATE_KEY_BLOCK_PATTERN.sub("[REDACTED_PRIVATE_KEY]", value)
+    val = SECRET_ASSIGNMENT_PATTERN.sub("[REDACTED_SECRET]", val)
+    val = BEARER_PATTERN.sub("Bearer [REDACTED]", val)
     val = JWT_PATTERN.sub("[REDACTED_JWT]", val)
     val = API_KEY_PATTERN.sub("[REDACTED_API_KEY]", val)
     val = GEMINI_KEY_PATTERN.sub("[REDACTED_KEY]", val)

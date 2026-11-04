@@ -80,8 +80,11 @@ def get_langfuse_client() -> Any | None:
         _CLIENT_INITIALIZED = True
         logger.info("Langfuse observability client initialized successfully.")
         return _CLIENT_INSTANCE
-    except Exception as e:
-        logger.warning(f"Failed to initialize Langfuse client: {e}. Falling back to no-op.")
+    except Exception as exc:
+        logger.warning(
+            "Failed to initialize Langfuse client (%s). Falling back to no-op.",
+            type(exc).__name__,
+        )
         _CLIENT_INSTANCE = None
         _CLIENT_INITIALIZED = True
         return None
@@ -186,7 +189,10 @@ class TraceSpanContext:
             self._span = self._cm.__enter__()
             return self._span
         except Exception as exc:
-            logger.debug(f"Langfuse start_as_current_observation failed: {exc}")
+            logger.debug(
+                "Langfuse observation start failed (%s).",
+                type(exc).__name__,
+            )
             return NoOpSpan(self.name)
 
     def __exit__(
@@ -200,11 +206,11 @@ class TraceSpanContext:
                 if exc_val is not None and hasattr(self._span, "update"):
                     self._span.update(
                         level="ERROR",
-                        status_message=str(exc_val),
+                        status_message=type(exc_val).__name__,
                     )
                 self._cm.__exit__(exc_type, exc_val, exc_tb)
-            except Exception as e:
-                logger.debug(f"Error in Langfuse span __exit__: {e}")
+            except Exception as exc:
+                logger.debug("Langfuse observation close failed (%s).", type(exc).__name__)
 
     async def __aenter__(self) -> Any:
         return self.__enter__()
@@ -327,11 +333,11 @@ def update_current_generation(
         if level is not None:
             kwargs["level"] = level
         if status_message is not None:
-            kwargs["status_message"] = status_message
+            kwargs["status_message"] = scrub_sensitive_data(status_message)
 
         client.update_current_generation(**kwargs)
-    except Exception as e:
-        logger.debug(f"Failed to update current generation: {e}")
+    except Exception as exc:
+        logger.debug("Failed to update current generation (%s).", type(exc).__name__)
 
 
 def update_current_span(
@@ -360,11 +366,11 @@ def update_current_span(
         if level is not None:
             kwargs["level"] = level
         if status_message is not None:
-            kwargs["status_message"] = status_message
+            kwargs["status_message"] = scrub_sensitive_data(status_message)
 
         client.update_current_span(**kwargs)
-    except Exception as e:
-        logger.debug(f"Failed to update current span: {e}")
+    except Exception as exc:
+        logger.debug("Failed to update current span (%s).", type(exc).__name__)
 
 
 def record_score(
@@ -416,13 +422,13 @@ def record_score(
         if resolved_data_type is not None:
             kwargs["data_type"] = resolved_data_type
         if comment is not None:
-            kwargs["comment"] = comment
+            kwargs["comment"] = scrub_sensitive_data(comment)
         if metadata is not None:
             kwargs["metadata"] = scrub_sensitive_data(metadata)
 
         client.create_score(**kwargs)
-    except Exception as e:
-        logger.debug(f"Failed to record score {name}: {e}")
+    except Exception as exc:
+        logger.debug("Failed to record score %s (%s).", name, type(exc).__name__)
 
 
 def flush_tracing() -> None:
@@ -432,8 +438,8 @@ def flush_tracing() -> None:
         return
     try:
         client.flush()
-    except Exception as e:
-        logger.debug(f"Langfuse flush error: {e}")
+    except Exception as exc:
+        logger.debug("Langfuse flush failed (%s).", type(exc).__name__)
 
 
 def shutdown_tracing() -> None:
@@ -443,5 +449,5 @@ def shutdown_tracing() -> None:
         return
     try:
         client.shutdown()
-    except Exception as e:
-        logger.debug(f"Langfuse shutdown error: {e}")
+    except Exception as exc:
+        logger.debug("Langfuse shutdown failed (%s).", type(exc).__name__)

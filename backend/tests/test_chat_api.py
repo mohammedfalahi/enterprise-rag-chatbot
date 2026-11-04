@@ -208,8 +208,76 @@ class TestChatApiEndpoint(unittest.TestCase):
                 self.assertIn("Path: Benefits > Paid Time Off", prompt_arg)
                 self.assertIn("Full-time employees receive 20 days of paid vacation annually.", prompt_arg)
 
+    def test_generation_trace_content_is_opt_in(self):
+        mock_user = CurrentUser(id="user-456", tenant_id="tenant-redwood", roles=["employee"])
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        results = [
+            RetrievalResult(
+                chunk_id="chunk-01",
+                document_id="doc-01",
+                title="PTO Guidelines",
+                heading_path=["Benefits"],
+                content="Employees receive 20 days of PTO.",
+                dense_rank=1,
+                fts_rank=1,
+                rrf_score=0.03,
+                rerank_score=3.0,
+            )
+        ]
+
+        class MockChunk:
+            text = "Employees receive 20 days of PTO."
+
+        mock_gemini = MagicMock()
+        mock_gemini.models.generate_content_stream.return_value = [MockChunk()]
+
+        for capture_content in (False, True):
+            spans = {}
+
+            def make_span(name, **kwargs):
+                context = MagicMock()
+                span = MagicMock()
+                context.__enter__.return_value = span
+                spans[name] = (kwargs, span)
+                return context
+
+            with (
+                patch(
+                    "app.api.chat.settings.langfuse_capture_content",
+                    capture_content,
+                ),
+                patch("app.api.chat.trace_span", side_effect=make_span),
+                patch("app.api.chat.search_documents", new_callable=AsyncMock) as mock_search,
+                patch("app.api.chat.genai.Client", return_value=mock_gemini),
+            ):
+                mock_search.return_value = results
+                response = self.client.post(
+                    "/api/chat",
+                    json={"message": "How many PTO days?"},
+                    headers={"Authorization": "******"},
+                )
+
+            self.assertEqual(response.status_code, 200)
+            generation_input, generation_span = spans["gemini_generation"]
+            trace_input = generation_input["input"]
+            if capture_content:
+                self.assertIn("system_prompt", trace_input)
+                self.assertEqual(trace_input["user_query"], "How many PTO days?")
+                self.assertIn("Employees receive 20 days of PTO.", trace_input["retrieved_context"])
+                self.assertEqual(
+                    generation_span.update.call_args.kwargs["output"]["generated_answer"],
+                    "Employees receive 20 days of PTO.",
+                )
+            else:
+                self.assertNotIn("system_prompt", trace_input)
+                self.assertNotIn("user_query", trace_input)
+                self.assertNotIn(
+                    "generated_answer",
+                    generation_span.update.call_args.kwargs["output"],
+                )
+
     def test_chat_streaming_generation_error(self):
-        """When Gemini generation raises an exception, emits error JSON frame in stream."""
+        """Generation errors are traced/logged and returned without provider details."""
         mock_user = CurrentUser(
             id="user-789",
             tenant_id="tenant-xyz",
@@ -253,7 +321,8 @@ class TestChatApiEndpoint(unittest.TestCase):
                 citations_frame = json.loads(lines[0].replace("data: ", ""))
                 self.assertEqual(citations_frame["type"], "citations")
                 error_frame = json.loads(lines[1].replace("data: ", ""))
-                self.assertIn("API quota exhausted", error_frame["error"])
+                self.assertIn("could not complete", error_frame["error"])
+                self.assertNotIn("API quota exhausted", error_frame["error"])
 
     def test_chat_empty_message_returns_400(self):
         """Empty message body returns HTTP 400 Bad Request."""
@@ -432,3 +501,208 @@ class TestChatApiEndpoint(unittest.TestCase):
                 # Retrieval MUST be called for compound question
                 mock_search.assert_called_once()
                 self.assertEqual(mock_search.call_args.kwargs.get("query"), "Hello, what is the remote work policy?")
+
+    def test_chat_successful_streaming_response_with_groq(self):
+        """When USE_GROQ_FOR_GENERATION is True, invokes Groq OpenAI-compatible client and streams chunks."""
+        mock_user = CurrentUser(
+            id="user-456",
+            tenant_id="tenant-redwood",
+            roles=["employee", "manager"],
+        )
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+
+        mock_chunks = [
+            RetrievalResult(
+                chunk_id="chunk-01",
+                document_id="doc-01",
+                title="PTO Guidelines",
+                heading_path=["Benefits", "Paid Time Off"],
+                content="Full-time employees receive 20 days of paid vacation annually.",
+                dense_rank=1,
+                fts_rank=1,
+                rrf_score=0.032,
+                rerank_score=3.85,
+            )
+        ]
+
+        class MockDelta:
+            def __init__(self, content):
+                self.content = content
+
+        class MockChoice:
+            def __init__(self, content):
+                self.delta = MockDelta(content)
+
+        class MockUsage:
+            prompt_tokens = 50
+            completion_tokens = 10
+            total_tokens = 60
+
+        class MockChunk:
+            def __init__(self, content=None, usage=None):
+                self.choices = [MockChoice(content)] if content is not None else []
+                self.usage = usage
+
+        async def mock_groq_stream():
+            yield MockChunk("Full-time employees ")
+            yield MockChunk("receive 20 days of PTO.")
+            yield MockChunk(usage=MockUsage())
+
+        mock_groq_client = MagicMock()
+        mock_groq_client.chat.completions.create = AsyncMock(return_value=mock_groq_stream())
+
+        with (
+            patch("app.api.chat.settings.USE_GROQ_FOR_GENERATION", True),
+            patch("app.api.chat.settings.groq_chat_llm_model", "openai/gpt-oss-120b"),
+            patch("app.api.chat.search_documents", new_callable=AsyncMock) as mock_search,
+            patch("app.api.chat.AsyncOpenAI", return_value=mock_groq_client),
+        ):
+            mock_search.return_value = mock_chunks
+            response = self.client.post(
+                "/api/chat",
+                json={"message": "How many vacation days do I get?"},
+                headers={"Authorization": "Bearer mocked-token"},
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("text/event-stream", response.headers["content-type"])
+
+            lines = response.text.strip().split("\n\n")
+            self.assertEqual(len(lines), 4)
+
+            citations_frame = json.loads(lines[0].replace("data: ", ""))
+            self.assertEqual(citations_frame["type"], "citations")
+            self.assertEqual(len(citations_frame["citations"]), 1)
+            self.assertEqual(citations_frame["citations"][0]["document_id"], "doc-01")
+
+            part1 = json.loads(lines[1].replace("data: ", ""))
+            part2 = json.loads(lines[2].replace("data: ", ""))
+            self.assertEqual(part1["text"], "Full-time employees ")
+            self.assertEqual(part2["text"], "receive 20 days of PTO.")
+            self.assertEqual(lines[3], "data: [DONE]")
+
+            # Verify Groq chat completion call arguments
+            mock_groq_client.chat.completions.create.assert_awaited_once()
+            call_kwargs = mock_groq_client.chat.completions.create.call_args.kwargs
+            self.assertEqual(call_kwargs["model"], "openai/gpt-oss-120b")
+            self.assertTrue(call_kwargs["stream"])
+            self.assertEqual(call_kwargs["stream_options"], {"include_usage": True})
+            prompt_content = call_kwargs["messages"][0]["content"]
+            self.assertIn("PTO Guidelines", prompt_content)
+            self.assertIn("How many vacation days do I get?", prompt_content)
+
+            # Verify database message was persisted
+            self.mock_append_msg.assert_awaited()
+            last_call = self.mock_append_msg.await_args.kwargs
+            self.assertEqual(last_call["role"], "assistant")
+            self.assertEqual(last_call["content"], "Full-time employees receive 20 days of PTO.")
+
+    def test_chat_streaming_groq_generation_error(self):
+        """Groq generation errors are traced and return safe sanitized error message."""
+        mock_user = CurrentUser(
+            id="user-789",
+            tenant_id="tenant-xyz",
+            roles=["employee"],
+        )
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+
+        mock_chunks = [
+            RetrievalResult(
+                chunk_id="chunk-01",
+                document_id="doc-01",
+                title="Doc Title",
+                heading_path=["Overview"],
+                content="Some content",
+                dense_rank=1,
+                fts_rank=1,
+                rrf_score=0.03,
+                rerank_score=1.0,
+            )
+        ]
+
+        mock_groq_client = MagicMock()
+        mock_groq_client.chat.completions.create = AsyncMock(side_effect=RuntimeError("Groq 503 Service Unavailable"))
+
+        with (
+            patch("app.api.chat.settings.USE_GROQ_FOR_GENERATION", True),
+            patch("app.api.chat.search_documents", new_callable=AsyncMock) as mock_search,
+            patch("app.api.chat.AsyncOpenAI", return_value=mock_groq_client),
+        ):
+            mock_search.return_value = mock_chunks
+            response = self.client.post(
+                "/api/chat",
+                json={"message": "Any question"},
+                headers={"Authorization": "Bearer mocked-token"},
+            )
+
+            self.assertEqual(response.status_code, 200)
+            lines = response.text.strip().split("\n\n")
+            self.assertEqual(len(lines), 2)
+            citations_frame = json.loads(lines[0].replace("data: ", ""))
+            self.assertEqual(citations_frame["type"], "citations")
+            error_frame = json.loads(lines[1].replace("data: ", ""))
+            self.assertIn("could not complete", error_frame["error"])
+            self.assertNotIn("Groq 503", error_frame["error"])
+
+    def test_chat_groq_trace_span_and_model_metadata(self):
+        """Trace span records groq_generation and groq model name when USE_GROQ_FOR_GENERATION is True."""
+        mock_user = CurrentUser(id="user-456", tenant_id="tenant-redwood", roles=["employee"])
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        results = [
+            RetrievalResult(
+                chunk_id="chunk-01",
+                document_id="doc-01",
+                title="PTO Guidelines",
+                heading_path=["Benefits"],
+                content="Employees receive 20 days of PTO.",
+                dense_rank=1,
+                fts_rank=1,
+                rrf_score=0.03,
+                rerank_score=3.0,
+            )
+        ]
+
+        class MockDelta:
+            content = "Employees receive 20 days of PTO."
+
+        class MockChoice:
+            delta = MockDelta()
+
+        class MockChunk:
+            choices = [MockChoice()]
+            usage = None
+
+        async def mock_groq_stream():
+            yield MockChunk()
+
+        mock_groq = MagicMock()
+        mock_groq.chat.completions.create = AsyncMock(return_value=mock_groq_stream())
+
+        spans = {}
+
+        def make_span(name, **kwargs):
+            context = MagicMock()
+            span = MagicMock()
+            context.__enter__.return_value = span
+            spans[name] = (kwargs, span)
+            return context
+
+        with (
+            patch("app.api.chat.settings.USE_GROQ_FOR_GENERATION", True),
+            patch("app.api.chat.settings.groq_chat_llm_model", "openai/gpt-oss-120b"),
+            patch("app.api.chat.trace_span", side_effect=make_span),
+            patch("app.api.chat.search_documents", new_callable=AsyncMock) as mock_search,
+            patch("app.api.chat.AsyncOpenAI", return_value=mock_groq),
+        ):
+            mock_search.return_value = results
+            response = self.client.post(
+                "/api/chat",
+                json={"message": "How many PTO days?"},
+                headers={"Authorization": "******"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("groq_generation", spans)
+        generation_kwargs, generation_span = spans["groq_generation"]
+        self.assertEqual(generation_kwargs["model"], "openai/gpt-oss-120b")
+
