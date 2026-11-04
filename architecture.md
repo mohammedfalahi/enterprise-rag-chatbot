@@ -84,9 +84,9 @@ This is the intended system architecture. Individual components must be verified
 | Embedding Dimension | 768 | Current vector dimension |
 | Fusion | Reciprocal Rank Fusion | Combining retrieval results |
 | Reranking | cross-encoder/ms-marco-MiniLM-L-6-v2 | Ranking retrieved candidates |
-| Generation | Gemini | Answer generation |
+| Generation | Gemini (default) / Groq (openai/gpt-oss-120b) | Answer generation and conversational query rewriting |
 | Streaming | Server-Sent Events | Streaming answers to frontend |
-| Observability | OpenTelemetry / Langfuse foundation | Tracing and monitoring |
+| Observability | Langfuse | Tracing and monitoring |
 
 **Important:** The current embedding model is Gemini Embedding 001 with 768 dimensions. Do not migrate the embedding model or change vector dimensions without an explicitly approved task.
 
@@ -208,11 +208,14 @@ flowchart TD
 Responsibilities:
 
 - Construct prompts using the user question and authorized context.
-- Generate grounded answers using Gemini.
+- Generate grounded answers using Gemini (default) or Groq (`openai/gpt-oss-120b` via OpenAI-compatible endpoint).
+- Support independent provider selection via configuration switches:
+  - `USE_GROQ_FOR_QUERY_REWRITE`: toggles Groq for conversational query reformulation.
+  - `USE_GROQ_FOR_GENERATION`: toggles Groq for streaming answer generation.
 - Include source references where supported.
 - Handle insufficient context.
 - Avoid fabricating facts.
-- Support streaming output.
+- Support streaming output over Server-Sent Events (SSE).
 
 The model must be instructed to treat retrieved documents as untrusted reference material, not as instructions that override system policy.
 
@@ -435,6 +438,9 @@ Measure:
 - MRR
 - NDCG@K
 
+These ranking metrics use binary document relevance, with repeated chunks from the
+same document deduplicated at the first retrieved rank.
+
 ### Answer evaluation
 
 Measure:
@@ -444,6 +450,12 @@ Measure:
 - Correctness against expected facts.
 - Appropriate no-answer behavior.
 - Source attribution quality.
+
+Run answer/context evaluation as a separate batch over saved evaluation records.
+Use Ragas for Faithfulness, Answer Relevancy, Context Precision, and Context
+Recall; use custom Python metrics for retrieval ranking and security checks.
+Evaluation must not run inside live chat requests or read production conversation
+data.
 
 ### Security evaluation
 
@@ -499,8 +511,8 @@ This section must be updated as implementation progresses.
 | Retry and timeout policies | Audit required |
 | Per-user rate limiting | Audit required |
 | Caching | Audit required |
-| Observability | Foundation exists; completeness requires audit |
-| Evaluation framework | Existing foundation; completeness requires audit |
+| Observability | Langfuse lifecycle tracing implemented; production credentials and data policy require deployment configuration |
+| Evaluation framework | Custom retrieval metrics and saved-output Ragas runner implemented; answer references and snapshots remain incomplete |
 | Frontend chat integration | Audit required |
 | End-to-end testing | Audit required |
 | Production database role hardening | Pending |
