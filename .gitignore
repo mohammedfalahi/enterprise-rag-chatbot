@@ -1,0 +1,119 @@
+
+# =====================================
+# DEPENDENCIES
+# =====================================
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# =====================================
+# PYTHON / FASTAPI
+# =====================================
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+
+# =====================================
+# NEXT.JS
+# =====================================
+.next/
+out/
+build/
+.turbo/
+
+# =====================================
+# TESTING
+# =====================================
+coverage/
+.pytest_cache/
+
+# =====================================
+# ENVIRONMENT VARIABLES / SECRETS
+# =====================================
+.env
+.env.*
+**/.env
+**/.env.*
+
+!.env.example
+!**/.env.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+service-account*.json
+
+# =====================================
+# SUPABASE LOCAL RUNTIME
+# =====================================
+supabase/.branches/
+supabase/.temp/
+
+# =====================================
+# LOCAL DATASETS
+# =====================================
+enterprise-dataset/
+
+# =====================================
+# DATABASE / LOCAL DATA
+# =====================================
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.bak
+postgres_data/
+pgdata/
+
+# =====================================
+# LOGS
+# =====================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# =====================================
+# VERCEL
+# =====================================
+.vercel/
+
+# =====================================
+# TYPESCRIPT
+# =====================================
+*.tsbuildinfo
+
+# =====================================
+# EDITORS / OPERATING SYSTEM
+# =====================================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =====================================
+# GENERATED FILES
+# =====================================
+project_structure.txt
+learning.md

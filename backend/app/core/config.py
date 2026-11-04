@@ -1,0 +1,64 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "Enterprise Knowledge Intelligence Assistant"
+    
+    # Database Configuration
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:54322/postgres"
+    
+    # Knowledge Vault / RAG Configuration (Reused from DEV_AI)
+    embedding_model: str = "gemini-embedding-001"
+    embedding_dim: int = 768
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    min_rerank_score: float = -8.5
+    
+    # Generative Model Configuration
+    query_rewrite_model: str = "gemini-3.5-flash-lite"
+    chat_llm_model: str = "gemini-3.5-flash-lite"
+    GEMINI_API_KEY: str = ""
+
+    # Multi-Turn Conversation Memory
+    conversation_history_window: int = 9
+    
+    # Supabase Settings
+    SUPABASE_URL: str = "http://127.0.0.1:54321"
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
+    SUPABASE_JWKS_URL: str | None = None
+    SUPABASE_JWT_AUDIENCE: str = "authenticated"
+    SUPABASE_JWT_ISSUER: str | None = None
+
+    @property
+    def jwks_url(self) -> str:
+        if self.SUPABASE_JWKS_URL and self.SUPABASE_JWKS_URL.strip():
+            return self.SUPABASE_JWKS_URL.strip()
+        base = (
+            self.SUPABASE_URL.rstrip("/")
+            if self.SUPABASE_URL and self.SUPABASE_URL.strip()
+            else "http://127.0.0.1:54321"
+        )
+        return f"{base}/auth/v1/.well-known/jwks.json"
+
+    @property
+    def jwt_issuer(self) -> str:
+        if self.SUPABASE_JWT_ISSUER and self.SUPABASE_JWT_ISSUER.strip():
+            return self.SUPABASE_JWT_ISSUER.strip()
+        base = (
+            self.SUPABASE_URL.rstrip("/")
+            if self.SUPABASE_URL and self.SUPABASE_URL.strip()
+            else "http://127.0.0.1:54321"
+        )
+        return f"{base}/auth/v1"
+    
+    # Observability & Langfuse Configuration (Reused from DEV_AI)
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+    langfuse_base_url: str = "https://cloud.langfuse.com"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+settings = Settings()
