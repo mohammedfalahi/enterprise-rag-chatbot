@@ -28,63 +28,52 @@ class TestQueryEmbeddingCache(unittest.TestCase):
     def tearDown(self):
         clear_query_embedding_cache()
 
-    def _mock_gemini_response(self, vector: list[float]):
-        mock_embedding = MagicMock()
-        mock_embedding.values = vector
-        mock_response = MagicMock()
-        mock_response.embeddings = [mock_embedding]
-        return mock_response
+    @staticmethod
+    def _vector(value: float) -> list[float]:
+        return [value] * 1024
 
-    @patch("app.rag.hybrid_search.genai.Client")
-    def test_identical_and_normalized_queries_cache_hit(self, mock_client_cls):
-        """Identical queries with different casing and whitespace hit the cache without calling Gemini API."""
-        mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
-
-        vector_1 = [0.1, 0.2, 0.3]
-        mock_client.models.embed_content.return_value = self._mock_gemini_response(vector_1)
+    @patch("app.rag.hybrid_search.embed_texts")
+    def test_identical_and_normalized_queries_cache_hit(self, mock_embed_texts):
+        """Identical queries with different casing and whitespace reuse local embeddings."""
+        vector_1 = self._vector(0.1)
+        mock_embed_texts.return_value = [vector_1]
 
         # 1. First invocation: misses cache, calls API
         res1 = get_query_embedding("What is the PTO policy?")
         self.assertEqual(res1, vector_1)
-        self.assertEqual(mock_client.models.embed_content.call_count, 1)
+        self.assertEqual(mock_embed_texts.call_count, 1)
 
         # 2. Second invocation: identical query hits cache
         res2 = get_query_embedding("What is the PTO policy?")
         self.assertEqual(res2, vector_1)
-        self.assertEqual(mock_client.models.embed_content.call_count, 1)
+        self.assertEqual(mock_embed_texts.call_count, 1)
 
         # 3. Third invocation: normalized whitespace & lowercase hits cache
         res3 = get_query_embedding("   what IS the pto POLICY?   ")
         self.assertEqual(res3, vector_1)
-        self.assertEqual(mock_client.models.embed_content.call_count, 1)
+        self.assertEqual(mock_embed_texts.call_count, 1)
 
-    @patch("app.rag.hybrid_search.genai.Client")
-    def test_distinct_queries_invoke_api(self, mock_client_cls):
+    @patch("app.rag.hybrid_search.embed_texts")
+    def test_distinct_queries_invoke_embedding_service(self, mock_embed_texts):
         """Distinct queries trigger separate API calls."""
-        mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
-
-        mock_client.models.embed_content.side_effect = [
-            self._mock_gemini_response([0.1, 0.2]),
-            self._mock_gemini_response([0.3, 0.4]),
+        mock_embed_texts.side_effect = [
+            [self._vector(0.1)],
+            [self._vector(0.3)],
         ]
 
         res1 = get_query_embedding("Question A")
         res2 = get_query_embedding("Question B")
 
-        self.assertEqual(res1, [0.1, 0.2])
-        self.assertEqual(res2, [0.3, 0.4])
-        self.assertEqual(mock_client.models.embed_content.call_count, 2)
+        self.assertEqual(res1, self._vector(0.1))
+        self.assertEqual(res2, self._vector(0.3))
+        self.assertEqual(mock_embed_texts.call_count, 2)
 
     @patch("app.rag.hybrid_search.trace_span")
-    @patch("app.rag.hybrid_search.genai.Client")
+    @patch("app.rag.hybrid_search.embed_texts")
     def test_embedding_trace_records_metadata_not_query_text(
-        self, mock_client_cls, mock_trace_span
+        self, mock_embed_texts, mock_trace_span
     ):
-        mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
-        mock_client.models.embed_content.return_value = self._mock_gemini_response([0.1])
+        mock_embed_texts.return_value = [self._vector(0.1)]
 
         get_query_embedding("private question content")
 
@@ -95,6 +84,7 @@ class TestQueryEmbeddingCache(unittest.TestCase):
     def test_retrieval_traces_include_chunk_ids_and_scores(self):
         cursor = MagicMock()
         cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock(return_value=("vector(1024)",))
         cursor.fetchall = AsyncMock(
             side_effect=[
                 [("chunk-a", "doc-a", "Title A", [], "content", 0.12)],
@@ -147,52 +137,50 @@ class TestQueryEmbeddingCache(unittest.TestCase):
         self.assertIn("score", rrf_output["fused_top_5"][0])
         self.assertEqual(rerank_output["scores"][0]["chunk_id"], "chunk-a")
         self.assertEqual(rerank_output["scores"][0]["rerank_score"], 2.5)
-
-    @patch("app.rag.hybrid_search.genai.Client")
-    def test_clear_query_embedding_cache(self, mock_client_cls):
-        """Clearing the cache forces the next query to re-fetch from the API."""
-        mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
-
-        mock_client.models.embed_content.side_effect = [
-            self._mock_gemini_response([0.5, 0.5]),
-            self._mock_gemini_response([0.5, 0.5]),
+        retrieval_queries = [
+            call for call in cursor.execute.await_args_list if "SELECT dc.id" in call.args[0]
         ]
+        self.assertEqual(len(retrieval_queries), 2)
+        for call in retrieval_queries:
+            self.assertIn("WHERE dc.tenant_id = %s AND dc.access_roles && %s", call.args[0])
+            self.assertEqual(call.args[1][1:3], ("tenant", ["employee"]))
+
+    @patch("app.rag.hybrid_search.embed_texts")
+    def test_clear_query_embedding_cache(self, mock_embed_texts):
+        """Clearing the cache forces the next query to re-embed locally."""
+        mock_embed_texts.return_value = [self._vector(0.5)]
 
         get_query_embedding("Sample Query")
-        self.assertEqual(mock_client.models.embed_content.call_count, 1)
+        self.assertEqual(mock_embed_texts.call_count, 1)
 
         clear_query_embedding_cache()
 
         get_query_embedding("Sample Query")
-        self.assertEqual(mock_client.models.embed_content.call_count, 2)
+        self.assertEqual(mock_embed_texts.call_count, 2)
 
-    @patch("app.rag.hybrid_search.genai.Client")
-    def test_lru_eviction(self, mock_client_cls):
+    @patch("app.rag.hybrid_search.embed_texts")
+    def test_lru_eviction(self, mock_embed_texts):
         """Least recently used items are evicted when cache reaches maximum capacity."""
-        mock_client = MagicMock()
-        mock_client_cls.return_value = mock_client
-
-        mock_client.models.embed_content.side_effect = [
-            self._mock_gemini_response([0.1]),  # Q1
-            self._mock_gemini_response([0.2]),  # Q2
-            self._mock_gemini_response([0.3]),  # Q3 (evicts Q1)
-            self._mock_gemini_response([0.1]),  # Q1 again (misses cache)
+        mock_embed_texts.side_effect = [
+            [self._vector(0.1)],  # Q1
+            [self._vector(0.2)],  # Q2
+            [self._vector(0.3)],  # Q3 (evicts Q1)
+            [self._vector(0.1)],  # Q1 again (misses cache)
         ]
 
         with patch("app.rag.hybrid_search._MAX_QUERY_CACHE_SIZE", 2):
             get_query_embedding("Q1")
             get_query_embedding("Q2")
-            self.assertEqual(mock_client.models.embed_content.call_count, 2)
+            self.assertEqual(mock_embed_texts.call_count, 2)
 
             # Insert Q3 -> evicts Q1 because Q1 was least recently used
             get_query_embedding("Q3")
-            self.assertEqual(mock_client.models.embed_content.call_count, 3)
+            self.assertEqual(mock_embed_texts.call_count, 3)
 
             # Q2 should still be cached
             get_query_embedding("Q2")
-            self.assertEqual(mock_client.models.embed_content.call_count, 3)
+            self.assertEqual(mock_embed_texts.call_count, 3)
 
             # Q1 was evicted, so querying it calls API
             get_query_embedding("Q1")
-            self.assertEqual(mock_client.models.embed_content.call_count, 4)
+            self.assertEqual(mock_embed_texts.call_count, 4)

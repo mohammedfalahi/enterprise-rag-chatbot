@@ -56,13 +56,13 @@ If implementation changes the system architecture, propose the corresponding `ar
 - Backend: FastAPI and Python.
 - Frontend: Next.js.
 - Database: Supabase PostgreSQL with pgvector.
-- Current embedding model: Gemini Embedding 001.
-- Current embedding dimension: 768.
+- Current embedding model: Qwen3-Embedding-0.6B via local Ollama (`qwen3-embedding:0.6b`).
+- Current embedding dimension: 1024 (`vector(1024)`).
 - Retrieval: Dense vector search + PostgreSQL Full-Text Search + RRF.
 - Reranking: cross-encoder/ms-marco-MiniLM-L-6-v2.
 - Generation: Gemini.
 
-Do not change these technologies or their configurations without approval.
+Gemini may be used for chat or evaluation LLM calls; embeddings must be produced locally by Ollama without truncation. Do not change these technologies or their configurations without approval.
 
 ## Communication Style
 

@@ -14,6 +14,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
+from app.rag.embeddings import embed_texts
 
 REQUIRED_FIELDS = ("user_input", "response", "retrieved_contexts", "reference")
 
@@ -64,7 +65,8 @@ def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
         raise RuntimeError("Set GEMINI_API_KEY to run the offline Ragas evaluator.")
 
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+        from langchain_core.embeddings import Embeddings
+        from langchain_google_genai import ChatGoogleGenerativeAI
         from ragas import EvaluationDataset, evaluate
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from ragas.llms import LangchainLLMWrapper
@@ -79,6 +81,13 @@ def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
             "Install the evaluation extra with `uv sync --extra evaluation`."
         ) from exc
 
+    class LocalOllamaEmbeddings(Embeddings):
+        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+            return embed_texts(texts)
+
+        def embed_query(self, text: str) -> list[float]:
+            return embed_texts([text])[0]
+
     evaluator_llm = LangchainLLMWrapper(
         ChatGoogleGenerativeAI(
             model=settings.chat_llm_model,
@@ -87,10 +96,7 @@ def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
         )
     )
     evaluator_embeddings = LangchainEmbeddingsWrapper(
-        GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
-            google_api_key=api_key,
-        )
+        LocalOllamaEmbeddings()
     )
     dataset = EvaluationDataset.from_list(records)
     result = evaluate(

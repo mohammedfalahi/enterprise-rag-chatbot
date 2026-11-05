@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -6,9 +8,11 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:54322/postgres"
     
-    # Knowledge Vault / RAG Configuration (Reused from DEV_AI)
-    embedding_model: str = "gemini-embedding-001"
-    embedding_dim: int = 768
+    # Knowledge Vault / RAG Configuration
+    ollama_embedding_model: Literal["qwen3-embedding:0.6b"] = "qwen3-embedding:0.6b"
+    ollama_embedding_dimensions: Literal[1024] = 1024
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_timeout_seconds: float = 120.0
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     min_rerank_score: float = -8.5
     
@@ -24,7 +28,6 @@ class Settings(BaseSettings):
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     groq_query_rewrite_model: str = "openai/gpt-oss-120b"
     groq_chat_llm_model: str = "openai/gpt-oss-120b"
-    OPENROUTER_API_KEY: str = ""
 
     # Multi-Turn Conversation Memory
     conversation_history_window: int = 9

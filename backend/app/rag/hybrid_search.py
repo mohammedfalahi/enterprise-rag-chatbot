@@ -9,18 +9,15 @@ dense and sparse retrieval queries before RRF and before any retrieved content r
 from __future__ import annotations
 
 import asyncio
-import os
 import threading
 from dataclasses import dataclass
-from typing import Any
-import psycopg
-from google import genai
-from google.genai import types
+
 from pydantic import BaseModel
 from sentence_transformers import CrossEncoder
 
 from app.core.config import settings
 from app.db.connection import get_db_connection
+from app.rag.embeddings import embed_texts, require_active_embedding_schema
 from app.observability.tracing import trace_span
 
 # Lazy-loaded model to prevent instantiation overhead when not searching
@@ -31,18 +28,24 @@ _QUERY_EMBEDDING_CACHE: dict[str, list[float]] = {}
 _MAX_QUERY_CACHE_SIZE = 1024
 _cache_lock = threading.Lock()
 
-
-def get_query_embedding(query: str, api_key: str | None = None) -> list[float]:
+def get_query_embedding(query: str) -> list[float]:
     """
     Retrieve query embedding vector with thread-safe LRU caching.
     Normalizes query strings to maximize cache hit rates for identical queries.
     """
-    normalized_key = " ".join(query.strip().lower().split())
+    normalized_query = " ".join(query.strip().lower().split())
+    normalized_key = (
+        f"{settings.ollama_embedding_model}:"
+        f"{settings.ollama_embedding_dimensions}:{normalized_query}"
+    )
     with trace_span(
         name="query_embedding",
         as_type="embedding",
-        model=settings.embedding_model,
-        input={"query_chars": len(query), "dimensions": settings.embedding_dim},
+        model=settings.ollama_embedding_model,
+        input={
+            "query_chars": len(query),
+            "dimensions": settings.ollama_embedding_dimensions,
+        },
     ) as embedding_span:
         with _cache_lock:
             if normalized_key in _QUERY_EMBEDDING_CACHE:
@@ -54,23 +57,7 @@ def get_query_embedding(query: str, api_key: str | None = None) -> list[float]:
                 )
                 return val
 
-        if api_key:
-            client = genai.Client(api_key=api_key, vertexai=False)
-        else:
-            # Preserve existing Gemini Embedding 001 through Vertex AI
-            client = genai.Client()
-        response = client.models.embed_content(
-            model=settings.embedding_model,
-            contents=query,
-            config=types.EmbedContentConfig(
-                task_type="RETRIEVAL_QUERY",
-                output_dimensionality=settings.embedding_dim,
-            ),
-        )
-        if not response.embeddings or not response.embeddings[0].values:
-            raise ValueError("Failed to retrieve embeddings from Gemini model")
-
-        vec = [float(x) for x in response.embeddings[0].values]
+        vec = embed_texts([query], batch_size=1)[0]
 
         with _cache_lock:
             if len(_QUERY_EMBEDDING_CACHE) >= _MAX_QUERY_CACHE_SIZE:
@@ -145,7 +132,7 @@ async def search_documents(
       at the database engine level before RRF fusion or LLM synthesis.
 
     Stage 1:
-      a) Fetch Top-10 using pgvector (Dense Semantic Search with Gemini Embedding-001).
+      a) Fetch Top-10 using pgvector (Dense Semantic Search with local Qwen3 embeddings).
       b) Fetch Top-10 using tsvector (Sparse Lexical Search via Postgres plainto_tsquery).
       c) Merge ranks using Reciprocal Rank Fusion (RRF, k=60).
     Stage 2:
@@ -154,6 +141,10 @@ async def search_documents(
     """
     if min_rerank_score is None:
         min_rerank_score = settings.min_rerank_score
+
+    async with get_db_connection() as conn:
+        async with conn.cursor() as cur:
+            await require_active_embedding_schema(cur)
 
     with trace_span(
         name="hybrid_search_documents",
@@ -171,7 +162,7 @@ async def search_documents(
             as_type="retriever",
             input={
                 "query_chars": len(query),
-                "embedding_model": settings.embedding_model,
+                "embedding_model": settings.ollama_embedding_model,
                 "limit": 10,
             },
         ) as dense_span:
@@ -185,7 +176,7 @@ async def search_documents(
                     await cur.execute(
                         f"""
                         SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
-                               (dc.embedding <=> %s::vector({settings.embedding_dim})) AS dist
+                               (dc.embedding <=> %s::vector({settings.ollama_embedding_dimensions})) AS dist
                         FROM document_chunks dc
                         JOIN documents d ON dc.document_id = d.id
                         WHERE dc.tenant_id = %s AND dc.access_roles && %s

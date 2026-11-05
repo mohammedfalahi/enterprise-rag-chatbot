@@ -80,15 +80,25 @@ This is the intended system architecture. Individual components must be verified
 | Database | Supabase PostgreSQL | Application and document data |
 | Vector Search | pgvector | Dense semantic retrieval |
 | Sparse Search | PostgreSQL Full-Text Search | Keyword-based retrieval |
-| Embeddings | Gemini Embedding 001 | Document and query embeddings |
-| Embedding Dimension | 768 | Current vector dimension |
+| Embeddings | Qwen3-Embedding-0.6B via local Ollama | Document and query embeddings |
+| Embedding Dimension | 1024 | `vector(1024)` in PostgreSQL |
 | Fusion | Reciprocal Rank Fusion | Combining retrieval results |
 | Reranking | cross-encoder/ms-marco-MiniLM-L-6-v2 | Ranking retrieved candidates |
 | Generation | Gemini (default) / Groq (openai/gpt-oss-120b) | Answer generation and conversational query rewriting |
 | Streaming | Server-Sent Events | Streaming answers to frontend |
 | Observability | Langfuse | Tracing and monitoring |
 
-**Important:** The current embedding model is Gemini Embedding 001 with 768 dimensions. Do not migrate the embedding model or change vector dimensions without an explicitly approved task.
+**Important:** Document and query embeddings use the same local `qwen3-embedding:0.6b` model with `dimensions=1024` and truncation disabled. Runtime validation rejects vectors with any other dimension. Gemini remains an LLM provider for generation/evaluation, never embeddings.
+
+Embedding runtime configuration:
+
+| Variable | Default / requirement |
+|---|---|
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` |
+| `OLLAMA_TIMEOUT_SECONDS` | `120` |
+| `OLLAMA_EMBEDDING_MODEL` | Pinned to `qwen3-embedding:0.6b` |
+| `OLLAMA_EMBEDDING_DIMENSIONS` | Pinned to `1024` |
+| `GEMINI_API_KEY` | Still used for Gemini chat/evaluator LLM calls, never embeddings |
 
 ---
 
@@ -173,6 +183,7 @@ flowchart TD
 #### Dense retrieval
 
 - Generate a query embedding using the same embedding model used for document ingestion.
+- Generate embeddings locally through Ollama with truncation disabled and validate exactly 1024 finite values per vector.
 - Search the pgvector embedding column.
 - Use cosine similarity.
 - Enforce tenant and role filters in the database query.
@@ -234,6 +245,7 @@ The current database uses Supabase PostgreSQL with pgvector.
 | `documents` | Document metadata and access permissions |
 | `document_chunks` | Chunk content, metadata, and embeddings |
 | `tenant_invitations` | Controlled tenant user provisioning |
+| `private.embedding_migration_checkpoints` | Restricted, resumable embedding migration state |
 
 ### Planned application tables
 
@@ -309,21 +321,23 @@ Important ingestion requirements:
 - Validate chunk counts and embedding dimensions.
 - Handle API errors and rate limits.
 - Record ingestion failures.
-- Make ingestion resumable or safely repeatable.
+- Use per-document persistent checkpoints so successful documents are not needlessly re-embedded on resume.
+- Use bounded batches, retries, and progress counts without discarding failed documents.
+- Keep Qwen vectors in a separate staging column until every document checkpoint and every vector dimension is verified; only then replace the active column and HNSW index.
 
 ### Current dataset checkpoint
 
-The latest verified local database checkpoint:
+The latest verified local `redwood_inference` database checkpoint after the Qwen embedding cutover:
 
 | Metric | Count |
 |---|---:|
-| Documents | 580 |
-| Chunks | 764 |
-| Embedded chunks | 764 |
-| Embedding dimension | 768 |
+| Documents | 5,144 |
+| Chunks | 20,211 |
+| Embedded chunks | 20,211 |
+| Embedding dimension | 1,024 (`vector`) |
 | Documents without chunks | 0 |
 
-These are checkpoint values, not permanent dataset limits.
+All document checkpoints completed for `qwen3-embedding:0.6b`; the active HNSW index uses `vector_cosine_ops`. This count is specific to the verified local database and is not a permanent dataset limit.
 
 ---
 
@@ -534,7 +548,7 @@ Unless explicitly approved, do not:
 
 - Replace Supabase PostgreSQL.
 - Introduce another vector database.
-- Change the embedding model or vector dimension.
+- Change the approved Qwen3 embedding model or 1024-dimensional vector configuration.
 - Replace Gemini generation.
 - Introduce unnecessary microservices.
 - Introduce Kubernetes or Celery without a demonstrated need.

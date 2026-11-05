@@ -1,89 +1,22 @@
-"""
-Document Ingestion with Gemini Embedding-001.
-Reused and adapted from DEV_AI (packages/knowledge/ingest.py).
-Integrates multi-tenant isolation, document access roles, and batch embedding.
-"""
+"""Document ingestion with local Qwen3 embeddings and tenant/role metadata."""
 
 from __future__ import annotations
 
-import os
 import uuid
 from pathlib import Path
-from typing import Any
-import psycopg
-from google import genai
-from google.genai import types
 
 from app.core.config import settings
 from app.db.connection import get_db_connection
 from app.rag.chunker import DocumentChunk, chunk_document_text
+from app.rag.embeddings import embed_texts, require_active_embedding_schema
 from app.rag.parsers import parse_document
 
 
 def generate_batch_embeddings(
     texts: list[str],
-    client: genai.Client | None = None,
-    batch_size: int = 30,
+    batch_size: int = 32,
 ) -> list[list[float]]:
-    """
-    Batch-embed texts using the configured Gemini embedding model and dimensions.
-    Exact implementation from DEV_AI (packages/knowledge/ingest.py).
-    """
-    if not texts:
-        return []
-
-    if client is None:
-        client = genai.Client()
-
-    import re
-    import time
-
-    embeddings: list[list[float]] = []
-
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        response = None
-        for attempt in range(6):
-            try:
-                response = client.models.embed_content(
-                    model=settings.embedding_model,
-                    contents=batch,
-                    config=types.EmbedContentConfig(
-                        output_dimensionality=settings.embedding_dim,
-                        task_type="RETRIEVAL_DOCUMENT",
-                    ),
-                )
-                break
-            except Exception as e:
-                err_str = str(e)
-                if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 5:
-                    delay = 10.0 * (attempt + 1)
-                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str)
-                    if match:
-                        delay = float(match.group(1)) + 1.0
-                    else:
-                        delay_match = re.search(r"'retryDelay':\s*'(\d+)s'", err_str)
-                        if delay_match:
-                            delay = float(delay_match.group(1)) + 1.0
-                    print(f"⏳ [Quota Backoff] Rate limit reached. Sleeping {delay:.1f}s before retry {attempt + 1}/5...")
-                    time.sleep(delay)
-                    continue
-
-                if attempt == 5:
-                    raise
-                time.sleep(2.0 * (attempt + 1))
-
-        if not response or not response.embeddings:
-            raise RuntimeError(
-                f"No embeddings returned for batch starting at index {i}"
-            )
-
-        for item in response.embeddings:
-            if not item.values:
-                raise RuntimeError("Empty embedding values returned from Gemini API")
-            embeddings.append(list(item.values))
-
-    return embeddings
+    return embed_texts(texts, batch_size=batch_size)
 
 
 async def ingest_document_file(
@@ -91,7 +24,6 @@ async def ingest_document_file(
     tenant_id: str,
     title: str,
     access_roles: list[str],
-    client: genai.Client | None = None,
     batch_size: int = 30,
     document_id: str | None = None,
 ) -> str | None:
@@ -111,13 +43,12 @@ async def ingest_document_file(
 
     # 2. Generate batch embeddings for search_text before opening database connection
     search_texts = [c.search_text for c in chunks]
-    embeddings = generate_batch_embeddings(
-        search_texts, client=client, batch_size=batch_size
-    )
+    embeddings = generate_batch_embeddings(search_texts, batch_size=batch_size)
 
     # 3. Persist document and chunks atomically within a single database transaction
     async with get_db_connection() as conn:
         async with conn.cursor() as cur:
+            await require_active_embedding_schema(cur)
             await cur.execute(
                 """
                 INSERT INTO documents (id, tenant_id, title, source_type, access_roles)
@@ -130,12 +61,15 @@ async def ingest_document_file(
                 (doc_id, tenant_id, title, source_type, access_roles),
             )
 
+            # Transactionally delete existing chunks for this document to prevent duplicate/orphaned chunks upon re-ingestion
+            await cur.execute("DELETE FROM document_chunks WHERE document_id = %s;", (doc_id,))
+
             for chunk, emb in zip(chunks, embeddings, strict=True):
                 await cur.execute(
-                    """
+                    f"""
                     INSERT INTO document_chunks 
                     (id, document_id, tenant_id, access_roles, heading_path, content, token_count, embedding)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector(768))
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector({settings.ollama_embedding_dimensions}))
                     ON CONFLICT (id) DO UPDATE SET
                         heading_path = EXCLUDED.heading_path,
                         content = EXCLUDED.content,
@@ -165,55 +99,39 @@ async def ingest_document_text(
     source_type: str,
     access_roles: list[str],
     document_id: str | None = None,
-    client: genai.Client | None = None,
     batch_size: int = 30,
 ) -> str:
     """Ingest raw text/markdown into PostgreSQL with multi-tenant and role metadata."""
+    doc_id = document_id or str(uuid.uuid4())
+    chunks: list[DocumentChunk] = chunk_document_text(
+        content, document_id=doc_id, title=title, source_type=source_type
+    )
+    embeddings = generate_batch_embeddings(
+        [chunk.search_text for chunk in chunks], batch_size=batch_size
+    )
+
     async with get_db_connection() as conn:
         async with conn.cursor() as cur:
-            if document_id:
-                await cur.execute(
-                    """
-                    INSERT INTO documents (id, tenant_id, title, source_type, access_roles)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE SET
-                        title = EXCLUDED.title,
-                        source_type = EXCLUDED.source_type,
-                        access_roles = EXCLUDED.access_roles
-                    RETURNING id;
-                    """,
-                    (document_id, tenant_id, title, source_type, access_roles),
-                )
-                doc_id = str((await cur.fetchone())[0])
-            else:
-                await cur.execute(
-                    """
-                    INSERT INTO documents (tenant_id, title, source_type, access_roles)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id;
-                    """,
-                    (tenant_id, title, source_type, access_roles),
-                )
-                doc_id = str((await cur.fetchone())[0])
-
-            chunks: list[DocumentChunk] = chunk_document_text(
-                content, document_id=doc_id, title=title
+            await require_active_embedding_schema(cur)
+            await cur.execute(
+                """
+                INSERT INTO documents (id, tenant_id, title, source_type, access_roles)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    source_type = EXCLUDED.source_type,
+                    access_roles = EXCLUDED.access_roles;
+                """,
+                (doc_id, tenant_id, title, source_type, access_roles),
             )
-            if not chunks:
-                await conn.commit()
-                return doc_id
-
-            search_texts = [c.search_text for c in chunks]
-            embeddings = generate_batch_embeddings(
-                search_texts, client=client, batch_size=batch_size
-            )
+            await cur.execute("DELETE FROM document_chunks WHERE document_id = %s;", (doc_id,))
 
             for chunk, emb in zip(chunks, embeddings, strict=True):
                 await cur.execute(
-                    """
+                    f"""
                     INSERT INTO document_chunks 
                     (id, document_id, tenant_id, access_roles, heading_path, content, token_count, embedding)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector(768))
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector({settings.ollama_embedding_dimensions}))
                     ON CONFLICT (id) DO UPDATE SET
                         heading_path = EXCLUDED.heading_path,
                         content = EXCLUDED.content,
@@ -234,4 +152,3 @@ async def ingest_document_text(
                 )
             await conn.commit()
             return doc_id
-
