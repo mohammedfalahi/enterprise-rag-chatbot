@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Supabase Settings
     SUPABASE_URL: str = "http://127.0.0.1:54321"
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_INVITE_REDIRECT_URL: str = "http://localhost:3000/accept-invite"
     SUPABASE_JWT_SECRET: str = ""
     SUPABASE_JWKS_URL: str | None = None
     SUPABASE_JWT_AUDIENCE: str = "authenticated"

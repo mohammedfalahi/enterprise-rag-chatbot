@@ -19,6 +19,22 @@ from app.db.connection import get_db_connection
 ALLOWED_ROLES: list[str] = ["employee", "sales_rep", "manager", "executive"]
 
 
+class PendingInvitationExists(Exception):
+    """Raised when an unclaimed invitation already exists for a tenant and email."""
+
+
+class InvitationNotFound(Exception):
+    """Raised when no pending invitation matches the authenticated user's email."""
+
+
+class InvitationEmailMismatch(Exception):
+    """Raised when the authenticated user's email does not match their Auth account."""
+
+
+class InvitationProfileConflict(Exception):
+    """Raised when accepting an invitation would change an existing user profile."""
+
+
 def validate_roles(roles: list[str]) -> None:
     """
     Validates that roles is non-empty and every role is an allowed enterprise role.
@@ -76,6 +92,114 @@ async def invite_user_to_tenant(
             row = await cur.fetchone()
             await conn.commit()
             return str(row[0])
+
+
+async def has_pending_invitation(tenant_id: str, email: str) -> bool:
+    """Checks whether this tenant already has an unclaimed invitation for the email."""
+    async with get_db_connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                SELECT 1 FROM tenant_invitations
+                WHERE tenant_id = %s::uuid
+                  AND LOWER(email) = LOWER(%s)
+                  AND claimed_at IS NULL
+                LIMIT 1;
+                """,
+                (tenant_id, email),
+            )
+            return await cur.fetchone() is not None
+
+
+async def create_pending_invitation(
+    tenant_id: str,
+    email: str,
+    roles: list[str],
+) -> str:
+    """Stores a pending invitation without provisioning an Auth user prematurely."""
+    validate_roles(roles)
+    clean_email = email.strip().lower()
+
+    async with get_db_connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                """
+                INSERT INTO tenant_invitations (tenant_id, email, roles)
+                VALUES (%s::uuid, %s, %s::text[])
+                ON CONFLICT (email, tenant_id) DO NOTHING
+                RETURNING id;
+                """,
+                (tenant_id, clean_email, roles),
+            )
+            row = await cur.fetchone()
+            if not row:
+                raise PendingInvitationExists
+            await conn.commit()
+            return str(row[0])
+
+
+async def accept_user_invitation(user_id: str, email: str) -> tuple[str, list[str]]:
+    """Creates the invited user's profile and claims the invitation atomically."""
+    clean_email = email.strip().lower()
+    async with get_db_connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT email FROM auth.users WHERE id = %s::uuid;",
+                (user_id,),
+            )
+            auth_user = await cur.fetchone()
+            if not auth_user or (auth_user[0] or "").strip().lower() != clean_email:
+                raise InvitationEmailMismatch
+
+            await cur.execute(
+                """
+                SELECT id, tenant_id, roles
+                FROM tenant_invitations
+                WHERE LOWER(email) = LOWER(%s)
+                  AND claimed_at IS NULL
+                ORDER BY created_at ASC
+                LIMIT 1
+                FOR UPDATE;
+                """,
+                (clean_email,),
+            )
+            invitation = await cur.fetchone()
+            if not invitation:
+                raise InvitationNotFound
+
+            invitation_id, tenant_id, roles = invitation
+            await cur.execute(
+                """
+                SELECT tenant_id, roles
+                FROM user_profiles
+                WHERE id = %s::uuid
+                FOR UPDATE;
+                """,
+                (user_id,),
+            )
+            profile = await cur.fetchone()
+            if profile:
+                if str(profile[0]) != str(tenant_id) or list(profile[1]) != list(roles):
+                    raise InvitationProfileConflict
+            else:
+                await cur.execute(
+                    """
+                    INSERT INTO user_profiles (id, tenant_id, roles)
+                    VALUES (%s::uuid, %s::uuid, %s::text[]);
+                    """,
+                    (user_id, tenant_id, roles),
+                )
+
+            await cur.execute(
+                """
+                UPDATE tenant_invitations
+                SET claimed_at = NOW()
+                WHERE id = %s::uuid AND claimed_at IS NULL;
+                """,
+                (invitation_id,),
+            )
+            await conn.commit()
+            return str(tenant_id), list(roles)
 
 
 async def assign_user_tenant(

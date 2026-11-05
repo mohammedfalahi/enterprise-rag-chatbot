@@ -55,8 +55,13 @@ class TestChatApiEndpoint(unittest.TestCase):
             "id": "m1111111-1111-1111-1111-111111111111",
         }
 
+        # Ensure unit tests default to Gemini generation unless explicitly overridden
+        self.groq_patcher = patch("app.api.chat.settings.USE_GROQ_FOR_GENERATION", False)
+        self.mock_use_groq = self.groq_patcher.start()
+
     def tearDown(self):
         app.dependency_overrides = {}
+        self.groq_patcher.stop()
         self.conv_patcher.stop()
         self.get_conv_patcher.stop()
         self.get_msgs_patcher.stop()

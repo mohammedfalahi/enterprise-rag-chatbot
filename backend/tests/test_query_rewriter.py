@@ -13,6 +13,16 @@ from app.rag.query_rewriter import build_rewrite_prompt, rewrite_query_for_retri
 
 class TestQueryRewriter(unittest.IsolatedAsyncioTestCase):
 
+    def setUp(self):
+        # Ensure unit tests default to Gemini query rewriter unless explicitly overridden
+        self.groq_patcher = patch(
+            "app.rag.query_rewriter.settings.USE_GROQ_FOR_QUERY_REWRITE", False
+        )
+        self.mock_use_groq = self.groq_patcher.start()
+
+    def tearDown(self):
+        self.groq_patcher.stop()
+
     def test_build_rewrite_prompt(self):
         history = [
             {"role": "user", "content": "Tell me about Project Odyssey."},

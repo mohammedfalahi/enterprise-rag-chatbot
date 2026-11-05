@@ -21,6 +21,11 @@ class CurrentUser(BaseModel):
     roles: List[str]
 
 
+class AuthenticatedUser(BaseModel):
+    id: str
+    email: str | None = None
+
+
 # Global JWKS client singleton with in-memory caching
 _jwks_client: jwt.PyJWKClient | None = None
 
@@ -45,6 +50,26 @@ def reset_jwks_client(client: jwt.PyJWKClient | None = None) -> None:
     """Reset or override the global PyJWKClient (primarily for testing)."""
     global _jwks_client
     _jwks_client = client
+
+
+async def get_authenticated_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> AuthenticatedUser:
+    """Returns the identity from a verified Supabase JWT without requiring a profile."""
+    payload = verify_supabase_jwt(credentials.credentials)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing subject (sub)",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email = payload.get("email")
+    return AuthenticatedUser(
+        id=str(user_id),
+        email=email if isinstance(email, str) else None,
+    )
 
 
 def verify_supabase_jwt(

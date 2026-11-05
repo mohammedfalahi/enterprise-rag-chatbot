@@ -71,6 +71,11 @@ async def evaluate_golden(
     top_k: int = 5,
     limit: int | None = None,
     mock_retriever: Any = None,
+    mode: str = "hybrid_rerank",
+    candidate_limit: int = 10,
+    k_rrf: int = 60,
+    rerank_pool_size: int = 5,
+    save_per_query_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero")
@@ -86,13 +91,17 @@ async def evaluate_golden(
             raise ValueError("limit must not be negative")
         records = records[:limit]
 
-    print(f"Loaded {len(records)} golden test cases from {path}")
+    print(
+        f"Loaded {len(records)} golden test cases from {path} "
+        f"[mode={mode}, top_k={top_k}, cand_limit={candidate_limit}, k_rrf={k_rrf}, pool={rerank_pool_size}]"
+    )
 
     leakage_count = 0
     query_metrics: list[dict[str, float]] = []
     category_metrics: dict[str, list[dict[str, float]]] = defaultdict(list)
     role_metrics: dict[str, list[dict[str, float]]] = defaultdict(list)
     role_leakages: dict[str, int] = defaultdict(int)
+    per_query_records: list[dict[str, Any]] = []
 
     for idx, test in enumerate(records, start=1):
         role = test["role"]
@@ -112,6 +121,10 @@ async def evaluate_golden(
                 tenant_id=tenant_id,
                 user_roles=[role],
                 top_k=top_k,
+                mode=mode,
+                candidate_limit=candidate_limit,
+                k_rrf=k_rrf,
+                rerank_pool_size=rerank_pool_size,
             )
 
         # 2. Check Permission Leakage (verify no chunk with unauthorized roles was returned)
@@ -140,6 +153,7 @@ async def evaluate_golden(
                             break
 
         # 3. Compute Recall@k for answer/partial questions with gold docs
+        metrics = None
         if expected_behavior in ("answer", "partial") and expected_uuids:
             metrics = ranking_metrics_at_k(
                 [result.document_id for result in results],
@@ -149,6 +163,24 @@ async def evaluate_golden(
             query_metrics.append(metrics)
             category_metrics[category].append(metrics)
             role_metrics[role].append(metrics)
+
+        per_query_records.append(
+            {
+                "test_id": test.get("test_id"),
+                "question_id": test.get("question_id"),
+                "role": role,
+                "category": category,
+                "expected_behavior": expected_behavior,
+                "question": question,
+                "answer_facts": test.get("answer_facts", []),
+                "gold_doc_ids": list(gold_doc_ids),
+                "gold_uuids": list(expected_uuids),
+                "retrieved_doc_ids": [r.document_id for r in results],
+                "retrieved_chunk_ids": [r.chunk_id for r in results],
+                "retrieved_titles": [r.title for r in results],
+                "metrics": metrics,
+            }
+        )
 
         if idx % 50 == 0 or idx == len(records):
             current_mean_recall = (
@@ -161,6 +193,14 @@ async def evaluate_golden(
                 f"[{idx}/{len(records)}] Mean Recall@{top_k}: {current_mean_recall:.3f} | "
                 f"Leakages: {leakage_count}"
             )
+
+    if save_per_query_path:
+        out_path = Path(save_per_query_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            for item in per_query_records:
+                f.write(json.dumps(item) + "\n")
+        print(f"Saved {len(per_query_records)} per-query records to {out_path}")
 
     mean_recall = (
         sum(metrics[f"recall@{top_k}"] for metrics in query_metrics) / len(query_metrics)
@@ -212,6 +252,10 @@ async def evaluate_injections(
     tenant_id: str,
     top_k: int = 5,
     mock_retriever: Any = None,
+    mode: str = "hybrid_rerank",
+    candidate_limit: int = 10,
+    k_rrf: int = 60,
+    rerank_pool_size: int = 5,
 ) -> dict[str, Any]:
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero")
@@ -240,6 +284,10 @@ async def evaluate_injections(
                 tenant_id=tenant_id,
                 user_roles=[role],
                 top_k=top_k,
+                mode=mode,
+                candidate_limit=candidate_limit,
+                k_rrf=k_rrf,
+                rerank_pool_size=rerank_pool_size,
             )
 
         # Refusal is verified if no results pass or MS-MARCO refusal gate triggers
@@ -287,6 +335,11 @@ async def run_evaluations(
     top_k: int = 5,
     limit: int | None = None,
     dry_run: bool = False,
+    mode: str = "hybrid_rerank",
+    candidate_limit: int = 10,
+    k_rrf: int = 60,
+    rerank_pool_size: int = 5,
+    save_per_query_path: str | Path | None = None,
 ):
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero")
@@ -298,7 +351,11 @@ async def run_evaluations(
     print(f"Tenant:          {tenant_name}")
     print(f"Golden Tests:    {golden_path}")
     print(f"Injection Tests: {injection_path}")
+    print(f"Mode:            {mode}")
     print(f"Top-K:           {top_k}")
+    print(f"Candidate Limit: {candidate_limit}")
+    print(f"RRF k:           {k_rrf}")
+    print(f"Rerank Pool:     {rerank_pool_size}")
     print(f"Limit:           {limit or 'All'}")
     print(f"Dry Run:         {dry_run}")
     print("==================================================\n")
@@ -331,11 +388,20 @@ async def run_evaluations(
                 tenant_id=tenant_id,
                 top_k=top_k,
                 limit=limit,
+                mode=mode,
+                candidate_limit=candidate_limit,
+                k_rrf=k_rrf,
+                rerank_pool_size=rerank_pool_size,
+                save_per_query_path=save_per_query_path,
             )
             injection_results = await evaluate_injections(
                 injection_path=injection_path,
                 tenant_id=tenant_id,
                 top_k=top_k,
+                mode=mode,
+                candidate_limit=candidate_limit,
+                k_rrf=k_rrf,
+                rerank_pool_size=rerank_pool_size,
             )
         finally:
             await close_db_pool()
@@ -344,6 +410,10 @@ async def run_evaluations(
         "tenant_id": tenant_id,
         "tenant_name": tenant_name,
         "top_k": top_k,
+        "mode": mode,
+        "candidate_limit": candidate_limit,
+        "k_rrf": k_rrf,
+        "rerank_pool_size": rerank_pool_size,
         "golden": golden_results,
         "injections": injection_results,
     }
@@ -367,26 +437,153 @@ async def run_evaluations(
     return report
 
 
+async def run_retrieval_experiments(
+    golden_path: str = DEFAULT_GOLDEN_PATH,
+    injection_path: str = DEFAULT_INJECTION_PATH,
+    tenant_name: str = DEFAULT_TENANT_NAME,
+    limit: int | None = None,
+    save_dir: str | Path = "evaluation_results",
+) -> list[dict[str, Any]]:
+    tenant_id = str(uuid.uuid5(uuid.NAMESPACE_OID, tenant_name))
+    out_dir = Path(save_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    configs = [
+        # Core method comparisons (top_k=5)
+        {"name": "Hybrid RRF + Reranker (Baseline)", "mode": "hybrid_rerank", "top_k": 5, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Dense Alone", "mode": "dense_only", "top_k": 5, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "BM25 Alone", "mode": "sparse_only", "top_k": 5, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Hybrid RRF Alone (k=60)", "mode": "hybrid_rrf", "top_k": 5, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+
+        # Top-K variations (top_k=3, 10)
+        {"name": "Hybrid RRF + Reranker (top_k=3)", "mode": "hybrid_rerank", "top_k": 3, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Hybrid RRF + Reranker (top_k=10, cand=20, pool=10)", "mode": "hybrid_rerank", "top_k": 10, "candidate_limit": 20, "k_rrf": 60, "rerank_pool_size": 10},
+        {"name": "Dense Alone (top_k=3)", "mode": "dense_only", "top_k": 3, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Dense Alone (top_k=10)", "mode": "dense_only", "top_k": 10, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "BM25 Alone (top_k=3)", "mode": "sparse_only", "top_k": 3, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "BM25 Alone (top_k=10)", "mode": "sparse_only", "top_k": 10, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Hybrid RRF Alone (top_k=3)", "mode": "hybrid_rrf", "top_k": 3, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+        {"name": "Hybrid RRF Alone (top_k=10)", "mode": "hybrid_rrf", "top_k": 10, "candidate_limit": 10, "k_rrf": 60, "rerank_pool_size": 5},
+
+        # RRF k parameter sweeps (top_k=5)
+        {"name": "Hybrid RRF Alone (k_rrf=20)", "mode": "hybrid_rrf", "top_k": 5, "candidate_limit": 10, "k_rrf": 20, "rerank_pool_size": 5},
+        {"name": "Hybrid RRF Alone (k_rrf=100)", "mode": "hybrid_rrf", "top_k": 5, "candidate_limit": 10, "k_rrf": 100, "rerank_pool_size": 5},
+
+        # Candidate and reranker pool sizing
+        {"name": "Hybrid RRF + Reranker (cand=20, pool=10, top_k=5)", "mode": "hybrid_rerank", "top_k": 5, "candidate_limit": 20, "k_rrf": 60, "rerank_pool_size": 10},
+    ]
+
+    results_table = []
+    await init_db_pool()
+    try:
+        for idx, cfg in enumerate(configs, start=1):
+            print(f"\n==================================================")
+            print(f" Experiment [{idx}/{len(configs)}]: {cfg['name']}")
+            print(f"==================================================")
+            slug = cfg["name"].lower().replace(" ", "_").replace("(", "").replace(")", "").replace("+", "plus").replace("=", "").replace(",", "")
+            per_query_file = out_dir / f"{slug}_queries.jsonl"
+
+            golden_res = await evaluate_golden(
+                golden_path=golden_path,
+                tenant_id=tenant_id,
+                top_k=cfg["top_k"],
+                limit=limit,
+                mode=cfg["mode"],
+                candidate_limit=cfg["candidate_limit"],
+                k_rrf=cfg["k_rrf"],
+                rerank_pool_size=cfg["rerank_pool_size"],
+                save_per_query_path=per_query_file,
+            )
+
+            inj_res = await evaluate_injections(
+                injection_path=injection_path,
+                tenant_id=tenant_id,
+                top_k=cfg["top_k"],
+                mode=cfg["mode"],
+                candidate_limit=cfg["candidate_limit"],
+                k_rrf=cfg["k_rrf"],
+                rerank_pool_size=cfg["rerank_pool_size"],
+            )
+
+            metrics = golden_res.get("retrieval_metrics", {})
+            k = cfg["top_k"]
+            results_table.append(
+                {
+                    "Experiment": cfg["name"],
+                    "Mode": cfg["mode"],
+                    "Top-K": k,
+                    "Recall@K": metrics.get(f"recall@{k}", 0.0),
+                    "Precision@K": metrics.get(f"precision@{k}", 0.0),
+                    "MRR": metrics.get("mrr", 0.0),
+                    "nDCG@K": metrics.get(f"ndcg@{k}", 0.0),
+                    "Leakage Rate": golden_res.get("permission_leakage_rate", 0.0),
+                    "Injection Refusal": inj_res.get("refusal_rate", 0.0),
+                }
+            )
+    finally:
+        await close_db_pool()
+
+    # Save summary table
+    summary_path = out_dir / "retrieval_experiments_summary.json"
+    summary_path.write_text(json.dumps(results_table, indent=2), encoding="utf-8")
+
+    print("\n\n=================================== RETRIEVAL ABLATION EXPERIMENTS SUMMARY ===================================")
+    header = f"| {'Experiment':<46} | {'Top-K':<5} | {'Recall@K':<8} | {'Prec@K':<8} | {'MRR':<6} | {'nDCG@K':<7} | {'Leakage':<7} | {'Refusal':<7} |"
+    print(header)
+    print("|" + "-" * 48 + "|" + "-" * 7 + "|" + "-" * 10 + "|" + "-" * 10 + "|" + "-" * 8 + "|" + "-" * 9 + "|" + "-" * 9 + "|" + "-" * 9 + "|")
+    for r in results_table:
+        print(
+            f"| {r['Experiment']:<46} | {r['Top-K']:<5} | {r['Recall@K']*100:>7.2f}% | {r['Precision@K']:>8.4f} | {r['MRR']:>6.4f} | {r['nDCG@K']:>7.4f} | {r['Leakage Rate']*100:>6.2f}% | {r['Injection Refusal']*100:>6.2f}% |"
+        )
+    print("==============================================================================================================\n")
+
+    return results_table
+
+
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Enterprise Chatbot on EnterpriseRAG-Bench")
     parser.add_argument("--golden-path", type=str, default=DEFAULT_GOLDEN_PATH)
     parser.add_argument("--injection-path", type=str, default=DEFAULT_INJECTION_PATH)
     parser.add_argument("--tenant-name", type=str, default=DEFAULT_TENANT_NAME)
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--mode", type=str, default="hybrid_rerank", choices=["hybrid_rerank", "hybrid_rrf", "dense_only", "sparse_only"])
+    parser.add_argument("--candidate-limit", type=int, default=10)
+    parser.add_argument("--k-rrf", type=int, default=60)
+    parser.add_argument("--rerank-pool-size", type=int, default=5)
+    parser.add_argument("--save-per-query", type=str, default=None)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true", help="Validate test harness with mock retriever")
+    parser.add_argument("--run-experiments", action="store_true", help="Execute complete retrieval ablation matrix")
+    parser.add_argument("--experiments-dir", type=str, default="evaluation_results")
 
     args = parser.parse_args()
-    asyncio.run(
-        run_evaluations(
-            golden_path=args.golden_path,
-            injection_path=args.injection_path,
-            tenant_name=args.tenant_name,
-            top_k=args.top_k,
-            limit=args.limit,
-            dry_run=args.dry_run,
+
+    if args.run_experiments:
+        asyncio.run(
+            run_retrieval_experiments(
+                golden_path=args.golden_path,
+                injection_path=args.injection_path,
+                tenant_name=args.tenant_name,
+                limit=args.limit,
+                save_dir=args.experiments_dir,
+            )
         )
-    )
+    else:
+        asyncio.run(
+            run_evaluations(
+                golden_path=args.golden_path,
+                injection_path=args.injection_path,
+                tenant_name=args.tenant_name,
+                top_k=args.top_k,
+                limit=args.limit,
+                dry_run=args.dry_run,
+                mode=args.mode,
+                candidate_limit=args.candidate_limit,
+                k_rrf=args.k_rrf,
+                rerank_pool_size=args.rerank_pool_size,
+                save_per_query_path=args.save_per_query,
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel
 from sentence_transformers import CrossEncoder
@@ -27,6 +28,8 @@ _cross_encoder: CrossEncoder | None = None
 _QUERY_EMBEDDING_CACHE: dict[str, list[float]] = {}
 _MAX_QUERY_CACHE_SIZE = 1024
 _cache_lock = threading.Lock()
+
+RetrievalMode = Literal["hybrid_rerank", "hybrid_rrf", "dense_only", "sparse_only"]
 
 def get_query_embedding(query: str) -> list[float]:
     """
@@ -123,6 +126,11 @@ async def search_documents(
     user_roles: list[str],
     top_k: int = 3,
     min_rerank_score: float | None = None,
+    *,
+    mode: RetrievalMode = "hybrid_rerank",
+    candidate_limit: int = 10,
+    k_rrf: int = 60,
+    rerank_pool_size: int = 5,
 ) -> list[RetrievalResult]:
     """
     Search enterprise documents using DEV_AI's Retrieve-and-Rerank hybrid pipeline.
@@ -132,12 +140,18 @@ async def search_documents(
       at the database engine level before RRF fusion or LLM synthesis.
 
     Stage 1:
-      a) Fetch Top-10 using pgvector (Dense Semantic Search with local Qwen3 embeddings).
-      b) Fetch Top-10 using tsvector (Sparse Lexical Search via Postgres plainto_tsquery).
-      c) Merge ranks using Reciprocal Rank Fusion (RRF, k=60).
+      a) Fetch Top-N using pgvector (Dense Semantic Search with local Qwen3 embeddings).
+      b) Fetch Top-N using tsvector (Sparse Lexical Search via Postgres plainto_tsquery).
+      c) Merge ranks using Reciprocal Rank Fusion (RRF, default k=60).
     Stage 2:
-      a) Non-blocking Rerank of Top-5 fused candidates using MS-MARCO Cross-Encoder.
+      a) Non-blocking Rerank of Top-M fused candidates using MS-MARCO Cross-Encoder.
       b) Apply refusal gate (`min_rerank_score`) to reject irrelevant matches.
+
+    Ablation modes:
+      - 'hybrid_rerank': Dense + Sparse + RRF + Cross-Encoder reranking (default)
+      - 'hybrid_rrf': Dense + Sparse + RRF (no reranker or score cutoff)
+      - 'dense_only': Dense vector search alone
+      - 'sparse_only': PostgreSQL full-text search alone
     """
     if min_rerank_score is None:
         min_rerank_score = settings.min_rerank_score
@@ -145,6 +159,9 @@ async def search_documents(
     async with get_db_connection() as conn:
         async with conn.cursor() as cur:
             await require_active_embedding_schema(cur)
+
+    dense_limit = max(candidate_limit, top_k) if mode == "dense_only" else candidate_limit
+    sparse_limit = max(candidate_limit, top_k) if mode == "sparse_only" else candidate_limit
 
     with trace_span(
         name="hybrid_search_documents",
@@ -154,123 +171,190 @@ async def search_documents(
             "query_chars": len(query),
             "top_k": top_k,
             "min_rerank_score": min_rerank_score,
+            "mode": mode,
+            "candidate_limit": candidate_limit,
+            "k_rrf": k_rrf,
+            "rerank_pool_size": rerank_pool_size,
         },
     ) as retriever_span:
-        # 1. Compute query embedding vector and fetch dense candidates
-        with trace_span(
-            name="dense_retrieval_pgvector",
-            as_type="retriever",
-            input={
-                "query_chars": len(query),
-                "embedding_model": settings.ollama_embedding_model,
-                "limit": 10,
-            },
-        ) as dense_span:
-            query_vector = get_query_embedding(query)
+        candidates: dict[str, _Candidate] = {}
 
-            candidates: dict[str, _Candidate] = {}
+        # 1. Dense retrieval (if mode is hybrid or dense_only)
+        if mode in ("hybrid_rerank", "hybrid_rrf", "dense_only"):
+            with trace_span(
+                name="dense_retrieval_pgvector",
+                as_type="retriever",
+                input={
+                    "query_chars": len(query),
+                    "embedding_model": settings.ollama_embedding_model,
+                    "limit": dense_limit,
+                },
+            ) as dense_span:
+                query_vector = get_query_embedding(query)
 
-            async with get_db_connection() as conn:
-                async with conn.cursor() as cur:
-                    # Enforce tenant isolation and RBAC in dense retrieval
-                    await cur.execute(
-                        f"""
-                        SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
-                               (dc.embedding <=> %s::vector({settings.ollama_embedding_dimensions})) AS dist
-                        FROM document_chunks dc
-                        JOIN documents d ON dc.document_id = d.id
-                        WHERE dc.tenant_id = %s AND dc.access_roles && %s
-                        ORDER BY dist ASC
-                        LIMIT 10;
-                        """,
-                        (f"[{','.join(str(f) for f in query_vector)}]", tenant_id, user_roles),
-                    )
-
-                    dense_rows = await cur.fetchall()
-                    for rank, row in enumerate(dense_rows, start=1):
-                        chunk_id, document_id, title, heading_path, content, distance = row
-                        candidates[chunk_id] = _Candidate(
-                            chunk_id=chunk_id,
-                            document_id=str(document_id),
-                            title=title,
-                            heading_path=heading_path,
-                            content=content,
-                            dense_rank=rank,
-                            dense_distance=float(distance),
+                async with get_db_connection() as conn:
+                    async with conn.cursor() as cur:
+                        # Enforce tenant isolation and RBAC in dense retrieval
+                        await cur.execute(
+                            f"""
+                            SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
+                                   (dc.embedding <=> %s::vector({settings.ollama_embedding_dimensions})) AS dist
+                            FROM document_chunks dc
+                            JOIN documents d ON dc.document_id = d.id
+                            WHERE dc.tenant_id = %s AND dc.access_roles && %s
+                            ORDER BY dist ASC
+                            LIMIT {dense_limit};
+                            """,
+                            (f"[{','.join(str(f) for f in query_vector)}]", tenant_id, user_roles),
                         )
-            dense_span.update(
-                output={
-                    "dense_candidates_count": len(dense_rows),
-                    "scores": [
-                        {
-                            "rank": rank,
-                            "chunk_id": str(row[0]),
-                            "distance": float(row[5]),
-                        }
-                        for rank, row in enumerate(dense_rows, start=1)
-                    ],
-                }
-            )
 
-        # 2. Fetch top 10 sparse FTS candidates (Postgres plainto_tsquery + ts_rank_cd)
-        with trace_span(
-            name="sparse_retrieval_postgres_fts",
-            as_type="retriever",
-            input={"query_chars": len(query), "limit": 10},
-        ) as sparse_span:
-            async with get_db_connection() as conn:
-                async with conn.cursor() as cur:
-                    # Enforce tenant isolation and RBAC in sparse retrieval
-                    await cur.execute(
-                        """
-                        SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
-                               ts_rank_cd(dc.fts, plainto_tsquery('english', %s)) AS rank
-                        FROM document_chunks dc
-                        JOIN documents d ON dc.document_id = d.id
-                        WHERE dc.tenant_id = %s AND dc.access_roles && %s
-                          AND dc.fts @@ plainto_tsquery('english', %s)
-                        ORDER BY rank DESC
-                        LIMIT 10;
-                        """,
-                        (query, tenant_id, user_roles, query),
-                    )
-
-                    fts_rows = await cur.fetchall()
-                    for rank, row in enumerate(fts_rows, start=1):
-                        chunk_id, document_id, title, heading_path, content, ts_rank = row
-                        if chunk_id in candidates:
-                            candidates[chunk_id].fts_rank = rank
-                            candidates[chunk_id].fts_score = float(ts_rank)
-                        else:
+                        dense_rows = await cur.fetchall()
+                        for rank, row in enumerate(dense_rows, start=1):
+                            chunk_id, document_id, title, heading_path, content, distance = row
                             candidates[chunk_id] = _Candidate(
                                 chunk_id=chunk_id,
                                 document_id=str(document_id),
                                 title=title,
                                 heading_path=heading_path,
                                 content=content,
-                                fts_rank=rank,
-                                fts_score=float(ts_rank),
+                                dense_rank=rank,
+                                dense_distance=float(distance),
                             )
-            sparse_span.update(
-                output={
-                    "sparse_candidates_count": len(fts_rows),
-                    "scores": [
-                        {
-                            "rank": rank,
-                            "chunk_id": str(row[0]),
-                            "score": float(row[5]),
-                        }
-                        for rank, row in enumerate(fts_rows, start=1)
-                    ],
-                }
-            )
+                dense_span.update(
+                    output={
+                        "dense_candidates_count": len(dense_rows),
+                        "scores": [
+                            {
+                                "rank": rank,
+                                "chunk_id": str(row[0]),
+                                "distance": float(row[5]),
+                            }
+                            for rank, row in enumerate(dense_rows, start=1)
+                        ],
+                    }
+                )
+
+        # 2. Sparse lexical retrieval (if mode is hybrid or sparse_only)
+        if mode in ("hybrid_rerank", "hybrid_rrf", "sparse_only"):
+            with trace_span(
+                name="sparse_retrieval_postgres_fts",
+                as_type="retriever",
+                input={"query_chars": len(query), "limit": sparse_limit},
+            ) as sparse_span:
+                async with get_db_connection() as conn:
+                    async with conn.cursor() as cur:
+                        # Enforce tenant isolation and RBAC in sparse retrieval
+                        await cur.execute(
+                            f"""
+                            SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
+                                   ts_rank_cd(dc.fts, plainto_tsquery('english', %s)) AS rank
+                            FROM document_chunks dc
+                            JOIN documents d ON dc.document_id = d.id
+                            WHERE dc.tenant_id = %s AND dc.access_roles && %s
+                              AND dc.fts @@ plainto_tsquery('english', %s)
+                            ORDER BY rank DESC
+                            LIMIT {sparse_limit};
+                            """,
+                            (query, tenant_id, user_roles, query),
+                        )
+
+                        fts_rows = await cur.fetchall()
+                        for rank, row in enumerate(fts_rows, start=1):
+                            chunk_id, document_id, title, heading_path, content, ts_rank = row
+                            if chunk_id in candidates:
+                                candidates[chunk_id].fts_rank = rank
+                                candidates[chunk_id].fts_score = float(ts_rank)
+                            else:
+                                candidates[chunk_id] = _Candidate(
+                                    chunk_id=chunk_id,
+                                    document_id=str(document_id),
+                                    title=title,
+                                    heading_path=heading_path,
+                                    content=content,
+                                    fts_rank=rank,
+                                    fts_score=float(ts_rank),
+                                )
+                sparse_span.update(
+                    output={
+                        "sparse_candidates_count": len(fts_rows),
+                        "scores": [
+                            {
+                                "rank": rank,
+                                "chunk_id": str(row[0]),
+                                "score": float(row[5]),
+                            }
+                            for rank, row in enumerate(fts_rows, start=1)
+                        ],
+                    }
+                )
 
         if not candidates:
             retriever_span.update(output={"results_count": 0, "refused": True})
             return []
 
-        # 3. Merge using Reciprocal Rank Fusion (RRF, k=60)
-        k_rrf = 60
+        # Ablation fast-paths: dense alone and sparse alone
+        if mode == "dense_only":
+            dense_sorted = sorted(
+                [c for c in candidates.values() if c.dense_distance is not None],
+                key=lambda x: x.dense_distance or 0.0,
+            )
+            returned = [
+                RetrievalResult(
+                    chunk_id=c.chunk_id,
+                    document_id=c.document_id,
+                    title=c.title,
+                    heading_path=c.heading_path,
+                    content=c.content,
+                    dense_rank=c.dense_rank,
+                    dense_distance=c.dense_distance,
+                    fts_rank=None,
+                    fts_score=None,
+                    rrf_score=0.0,
+                    rerank_score=-c.dense_distance if c.dense_distance is not None else 0.0,
+                )
+                for c in dense_sorted[:top_k]
+            ]
+            retriever_span.update(
+                output={
+                    "results_count": len(returned),
+                    "refused": False,
+                    "top_rerank_score": returned[0].rerank_score if returned else None,
+                }
+            )
+            return returned
+
+        if mode == "sparse_only":
+            sparse_sorted = sorted(
+                [c for c in candidates.values() if c.fts_score is not None],
+                key=lambda x: x.fts_score or 0.0,
+                reverse=True,
+            )
+            returned = [
+                RetrievalResult(
+                    chunk_id=c.chunk_id,
+                    document_id=c.document_id,
+                    title=c.title,
+                    heading_path=c.heading_path,
+                    content=c.content,
+                    dense_rank=None,
+                    dense_distance=None,
+                    fts_rank=c.fts_rank,
+                    fts_score=c.fts_score,
+                    rrf_score=0.0,
+                    rerank_score=c.fts_score if c.fts_score is not None else 0.0,
+                )
+                for c in sparse_sorted[:top_k]
+            ]
+            retriever_span.update(
+                output={
+                    "results_count": len(returned),
+                    "refused": False,
+                    "top_rerank_score": returned[0].rerank_score if returned else None,
+                }
+            )
+            return returned
+
+        # 3. Merge using Reciprocal Rank Fusion (RRF)
         fused_scores = {}
         with trace_span(
             name="rrf_fusion",
@@ -285,11 +369,10 @@ async def search_documents(
                     score += 1.0 / (k_rrf + c.fts_rank)
                 fused_scores[chunk_id] = score
 
-            # Sort and take top 5 fused candidates for cross-encoder reranking
             sorted_fused = sorted(
                 fused_scores.items(), key=lambda item: item[1], reverse=True
             )
-            top_5_fused = sorted_fused[:5]
+            top_fused = sorted_fused[:rerank_pool_size]
             rrf_span.update(
                 output={
                     "fused_top_5": [
@@ -300,10 +383,38 @@ async def search_documents(
                             "dense_rank": candidates[chunk_id].dense_rank,
                             "fts_rank": candidates[chunk_id].fts_rank,
                         }
-                        for rank, (chunk_id, score) in enumerate(top_5_fused, start=1)
+                        for rank, (chunk_id, score) in enumerate(top_fused, start=1)
                     ]
                 }
             )
+
+        # Ablation fast-path: hybrid RRF without cross-encoder reranker or score cutoff
+        if mode == "hybrid_rrf":
+            returned = [
+                RetrievalResult(
+                    chunk_id=c.chunk_id,
+                    document_id=c.document_id,
+                    title=c.title,
+                    heading_path=c.heading_path,
+                    content=c.content,
+                    dense_rank=c.dense_rank,
+                    dense_distance=c.dense_distance,
+                    fts_rank=c.fts_rank,
+                    fts_score=c.fts_score,
+                    rrf_score=fused_scores[c.chunk_id],
+                    rerank_score=fused_scores[c.chunk_id],
+                )
+                for chunk_id, _ in sorted_fused[:top_k]
+                if (c := candidates[chunk_id]) is not None
+            ]
+            retriever_span.update(
+                output={
+                    "results_count": len(returned),
+                    "refused": False,
+                    "top_rerank_score": returned[0].rerank_score if returned else None,
+                }
+            )
+            return returned
 
         # 4. Score using MS-MARCO Cross-Encoder and apply refusal gate
         final_results = []
@@ -311,7 +422,7 @@ async def search_documents(
             name="cross_encoder_rerank_cutoff",
             as_type="span",
             input={
-                "candidates_count": len(top_5_fused),
+                "candidates_count": len(top_fused),
                 "model": settings.reranker_model,
                 "min_rerank_score": min_rerank_score,
             },
@@ -319,7 +430,7 @@ async def search_documents(
             cross_encoder_inputs = []
             candidates_to_rerank = []
 
-            for chunk_id, _ in top_5_fused:
+            for chunk_id, _ in top_fused:
                 c = candidates[chunk_id]
                 breadcrumb = " > ".join(c.heading_path) if c.heading_path else c.title
                 enriched_input = f"Title: {c.title} | Path: {breadcrumb} | {c.content}"

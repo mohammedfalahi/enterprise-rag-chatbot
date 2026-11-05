@@ -14,17 +14,20 @@ Covers:
 from __future__ import annotations
 
 import base64
+import asyncio
 import time
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 import jwt
 
 from app.core.config import settings
 from app.core.security import (
     CurrentUser,
+    get_authenticated_user,
     get_current_user,
     get_jwks_client,
     reset_jwks_client,
@@ -101,6 +104,20 @@ class TestSupabaseJWTAuthentication(unittest.TestCase):
         self.assertEqual(payload["sub"], "user-abc-123")
         self.assertEqual(payload["aud"], "authenticated")
         self.assertEqual(payload["email"], "testuser@enterprise.local")
+
+    def test_authenticated_user_extraction_uses_verified_claims(self):
+        """Invitation acceptance gets the user ID and email from a verified JWT."""
+        token = self._create_token(sub="user-abc-123")
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer",
+            credentials=token,
+        )
+
+        with patch("app.core.security.get_jwks_client", return_value=self.mock_client):
+            user = asyncio.run(get_authenticated_user(credentials))
+
+        self.assertEqual(user.id, "user-abc-123")
+        self.assertEqual(user.email, "testuser@enterprise.local")
 
     def test_invalid_signature_rejection(self):
         """Token signed by an unlisted/different EC key raises 401."""

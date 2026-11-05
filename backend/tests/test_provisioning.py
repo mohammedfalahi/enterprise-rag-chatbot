@@ -25,8 +25,10 @@ from app.core.security import CurrentUser, get_current_user, reset_jwks_client
 from app.db.connection import close_db_pool, get_db_connection, init_db_pool
 from app.db.provisioning import (
     ALLOWED_ROLES,
+    accept_user_invitation,
     assign_user_tenant,
     create_tenant,
+    create_pending_invitation,
     get_user_profile,
     invite_user_to_tenant,
     validate_roles,
@@ -152,6 +154,31 @@ class TestDatabaseProvisioningFlow(unittest.IsolatedAsyncioTestCase):
 
         profile = await get_user_profile(uid)
         self.assertIsNone(profile)
+
+    async def test_auth_user_is_provisioned_when_invitation_is_accepted(self):
+        """A stored invitation is claimed and its profile created only on acceptance."""
+        tid = await create_tenant("Invitation Acceptance Corp")
+        self.created_tenants.append(tid)
+        email = f"accept_{uuid.uuid4().hex[:6]}@enterprise.local"
+        uid = await self._create_test_auth_user(email)
+
+        invitation_id = await create_pending_invitation(tid, email, ["sales_rep"])
+        self.assertIsNone(await get_user_profile(uid))
+
+        tenant_id, roles = await accept_user_invitation(uid, email)
+        self.assertEqual(tenant_id, tid)
+        self.assertEqual(roles, ["sales_rep"])
+        self.assertEqual(await get_user_profile(uid), (tid, ["sales_rep"]))
+
+        async with get_db_connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT claimed_at FROM tenant_invitations WHERE id = %s;",
+                    (invitation_id,),
+                )
+                row = await cur.fetchone()
+                self.assertIsNotNone(row)
+                self.assertIsNotNone(row[0])
 
     async def test_unassigned_user_rejected_with_403(self):
         """

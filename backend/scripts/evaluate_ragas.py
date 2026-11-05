@@ -59,7 +59,7 @@ def load_evaluation_records(path: str | Path) -> list[dict[str, Any]]:
     return records
 
 
-def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
+def run_ragas(records: list[dict[str, Any]]) -> dict[str, Any]:
     api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("Set GEMINI_API_KEY to run the offline Ragas evaluator.")
@@ -71,6 +71,7 @@ def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
         from ragas.embeddings import LangchainEmbeddingsWrapper
         from ragas.llms import LangchainLLMWrapper
         from ragas.metrics import (
+            AnswerCorrectness,
             AnswerRelevancy,
             Faithfulness,
             LLMContextPrecisionWithReference,
@@ -106,20 +107,40 @@ def run_ragas(records: list[dict[str, Any]]) -> dict[str, float]:
             AnswerRelevancy(),
             LLMContextPrecisionWithReference(),
             LLMContextRecall(),
+            AnswerCorrectness(),
         ],
         llm=evaluator_llm,
         embeddings=evaluator_embeddings,
     )
 
     metric_values: dict[str, list[float]] = {}
-    for row in result.scores:
+    per_question_scores: list[dict[str, Any]] = []
+
+    for i, row in enumerate(result.scores):
+        row_scores = {}
         for name, value in row.items():
             if isinstance(value, (int, float)):
                 metric_values.setdefault(name, []).append(float(value))
-    return {
-        name: sum(values) / len(values)
+                row_scores[name] = round(float(value), 4)
+        per_question_scores.append(
+            {
+                "user_input": records[i]["user_input"],
+                "response": records[i]["response"],
+                "reference": records[i]["reference"],
+                "scores": row_scores,
+            }
+        )
+
+    aggregate = {
+        name: round(sum(values) / len(values), 4)
         for name, values in metric_values.items()
         if values
+    }
+
+    return {
+        "record_count": len(records),
+        "aggregate_metrics": aggregate,
+        "per_question_scores": per_question_scores,
     }
 
 
@@ -128,14 +149,18 @@ def main() -> None:
         description="Evaluate saved RAG outputs with Ragas; does not call chat or database APIs."
     )
     parser.add_argument("--input", type=Path, required=True, help="Saved evaluation JSONL")
-    parser.add_argument("--output", type=Path, help="Optional JSON file for aggregate scores")
+    parser.add_argument("--output", type=Path, help="Optional JSON file for scores report")
+    parser.add_argument("--limit", type=int, default=None, help="Optional limit on records to evaluate")
     args = parser.parse_args()
 
     records = load_evaluation_records(args.input)
-    scores = run_ragas(records)
-    report = {"record_count": len(records), "metrics": scores}
+    if args.limit is not None and args.limit > 0:
+        records = records[:args.limit]
+
+    report = run_ragas(records)
     print(json.dumps(report, indent=2, sort_keys=True))
     if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
