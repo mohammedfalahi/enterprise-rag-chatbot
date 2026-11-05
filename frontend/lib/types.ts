@@ -20,6 +20,7 @@ export interface ChatMessage {
   content: string;
   citations?: Citation[];
   created_at?: string;
+  notice?: string;
 }
 
 export interface ConversationSummary {

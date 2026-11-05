@@ -83,9 +83,14 @@ export default function ChatWindow({
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const streamRef = useRef<{ content: string; citations: Citation[] }>({
+  const streamRef = useRef<{
+    content: string;
+    citations: Citation[];
+    notice?: string;
+  }>({
     content: "",
     citations: [],
+    notice: undefined,
   });
   const primaryRole = roles[0] || "employee";
   const starterPrompts = getStarterPrompts(primaryRole);
@@ -298,11 +303,11 @@ export default function ChatWindow({
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let pendingLine = "";
-        streamRef.current = { content: "", citations: [] };
+        streamRef.current = { content: "", citations: [], notice: undefined };
 
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "", citations: [] },
+          { role: "assistant", content: "", citations: [], notice: undefined },
         ]);
 
         const handleSSELine = (line: string) => {
@@ -327,7 +332,18 @@ export default function ChatWindow({
             setActiveTitle(data.title);
           }
 
-          if (data.type === "citations" && Array.isArray(data.citations)) {
+          if (typeof data.error === "string") {
+            streamRef.current = {
+              ...streamRef.current,
+              content: data.error,
+            };
+            setLastFailedMessage(trimmedInput);
+          } else if (data.type === "notice" && typeof data.text === "string") {
+            streamRef.current = {
+              ...streamRef.current,
+              notice: data.text,
+            };
+          } else if (data.type === "citations" && Array.isArray(data.citations)) {
             streamRef.current = {
               ...streamRef.current,
               citations: data.citations as Citation[],
@@ -346,6 +362,7 @@ export default function ChatWindow({
               role: "assistant",
               content: currentMessage.content,
               citations: currentMessage.citations,
+              notice: currentMessage.notice,
             },
           ]);
         };
@@ -583,6 +600,26 @@ export default function ChatWindow({
                           </>
                         )}
                       </button>
+                    </div>
+                  )}
+
+                  {/* Subtle Fallback Notification Banner */}
+                  {m.role === "assistant" && m.notice && (
+                    <div className="mb-2.5 flex items-center space-x-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-800">
+                      <svg
+                        className="h-3.5 w-3.5 shrink-0 text-amber-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="font-medium">{m.notice}</span>
                     </div>
                   )}
 
