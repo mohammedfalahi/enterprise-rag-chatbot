@@ -6,6 +6,7 @@ into standalone search queries suitable for hybrid vector and full-text retrieva
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Any
@@ -17,6 +18,110 @@ from app.observability.redaction import scrub_sensitive_data
 from app.observability.tracing import trace_span
 
 logger = logging.getLogger(__name__)
+
+
+def is_rate_limit_error(exc: Exception) -> bool:
+    """Detects HTTP 429 / resource exhausted rate limit exceptions."""
+    status_code = getattr(exc, "status_code", None)
+    if status_code == 429:
+        return True
+    response = getattr(exc, "response", None)
+    if response is not None and getattr(response, "status_code", None) == 429:
+        return True
+    exc_type = type(exc).__name__
+    if "RateLimit" in exc_type:
+        return True
+    err_msg = str(exc).lower()
+    return "429" in err_msg or "rate limit" in err_msg or "resource_exhausted" in err_msg
+
+
+def is_auth_error(exc: Exception) -> bool:
+    """Detects HTTP 401/403 authentication or invalid API key exceptions."""
+    status_code = getattr(exc, "status_code", None)
+    if status_code in (401, 403):
+        return True
+    exc_type = type(exc).__name__
+    return "Authentication" in exc_type or "PermissionDenied" in exc_type
+
+
+def _call_gemini_rewrite(prompt: str, model_name: str) -> tuple[str, dict[str, int]]:
+    """Synchronous invocation of Gemini for query rewriting."""
+    client = genai.Client(
+        api_key=settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY"),
+        vertexai=False,
+    )
+    response = client.models.generate_content(
+        model=model_name,
+        contents=prompt,
+    )
+    rewritten_text = response.text if (response and response.text) else ""
+    usage_details: dict[str, int] = {}
+    usage = getattr(response, "usage_metadata", None)
+    if usage is not None:
+        for source, target in (
+            ("prompt_token_count", "input"),
+            ("candidates_token_count", "output"),
+            ("total_token_count", "total"),
+        ):
+            token_count = getattr(usage, source, None)
+            if token_count is not None:
+                usage_details[target] = int(token_count)
+    return rewritten_text, usage_details
+
+
+async def _call_groq_rewrite(
+    prompt: str,
+    model_name: str,
+    max_retries: int = 2,
+    base_delay: float = 0.5,
+) -> tuple[str, dict[str, int]]:
+    """Invokes primary Groq model with bounded exponential backoff retries on HTTP 429."""
+    groq_client = AsyncOpenAI(
+        api_key=settings.GROQ_API_KEY or os.environ.get("GROQ_API_KEY") or "none",
+        base_url=settings.GROQ_BASE_URL,
+    )
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            response = await groq_client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+            )
+            rewritten_text = ""
+            if response and response.choices:
+                first_choice = response.choices[0]
+                if first_choice.message and first_choice.message.content:
+                    rewritten_text = first_choice.message.content
+
+            usage_details: dict[str, int] = {}
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                for source, target in (
+                    ("prompt_tokens", "input"),
+                    ("completion_tokens", "output"),
+                    ("total_tokens", "total"),
+                ):
+                    token_count = getattr(usage, source, None)
+                    if token_count is not None:
+                        usage_details[target] = int(token_count)
+            return rewritten_text, usage_details
+        except Exception as exc:
+            last_exc = exc
+            if is_rate_limit_error(exc) and not is_auth_error(exc) and attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(
+                    "Primary LLM query rewriter rate limited (429). Retrying in %.2fs (attempt %d/%d)...",
+                    delay,
+                    attempt + 1,
+                    max_retries,
+                )
+                await asyncio.sleep(delay)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+    return "", {}
 
 
 def build_rewrite_prompt(current_question: str, history_messages: list[dict[str, Any]]) -> str:
@@ -82,65 +187,42 @@ async def rewrite_query_for_retrieval(
         model=model_name,
         input=trace_input,
     ) as rewrite_span:
+        fallback_activated = False
+        fallback_model: str | None = None
         try:
             rewritten_text = ""
             usage_details: dict[str, int] = {}
 
             if use_groq:
-                groq_client = AsyncOpenAI(
-                    api_key=settings.GROQ_API_KEY or os.environ.get("GROQ_API_KEY") or "none",
-                    base_url=settings.GROQ_BASE_URL,
-                )
-                response = await groq_client.chat.completions.create(
-                    model=model_name,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.0,
-                )
-                if response and response.choices:
-                    first_choice = response.choices[0]
-                    if first_choice.message and first_choice.message.content:
-                        rewritten_text = first_choice.message.content
-
-                usage = getattr(response, "usage", None)
-                if usage is not None:
-                    for source, target in (
-                        ("prompt_tokens", "input"),
-                        ("completion_tokens", "output"),
-                        ("total_tokens", "total"),
-                    ):
-                        token_count = getattr(usage, source, None)
-                        if token_count is not None:
-                            usage_details[target] = int(token_count)
+                try:
+                    rewritten_text, usage_details = await _call_groq_rewrite(prompt, model_name)
+                except Exception as exc:
+                    if is_rate_limit_error(exc) and not is_auth_error(exc):
+                        logger.warning(
+                            "Primary LLM query rewriter rate limit (429) persisted. Activating fallback to Gemini (%s)...",
+                            settings.query_rewrite_model,
+                        )
+                        fallback_activated = True
+                        fallback_model = settings.query_rewrite_model
+                        rewritten_text, usage_details = await asyncio.to_thread(
+                            _call_gemini_rewrite, prompt, settings.query_rewrite_model
+                        )
+                    else:
+                        raise
             else:
-                client = genai.Client(
-                    api_key=settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY"),
-                    vertexai=False,
+                rewritten_text, usage_details = await asyncio.to_thread(
+                    _call_gemini_rewrite, prompt, model_name
                 )
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                )
-                if response and response.text:
-                    rewritten_text = response.text
-
-                usage = getattr(response, "usage_metadata", None)
-                if usage is not None:
-                    for source, target in (
-                        ("prompt_token_count", "input"),
-                        ("candidates_token_count", "output"),
-                        ("total_token_count", "total"),
-                    ):
-                        token_count = getattr(usage, source, None)
-                        if token_count is not None:
-                            usage_details[target] = int(token_count)
 
             if rewritten_text:
                 rewritten = rewritten_text.strip().strip('"\'')
                 if rewritten:
                     rewrite_output: dict[str, Any] = {
                         "rewritten_query_chars": len(rewritten),
-                        "fallback": False,
+                        "fallback": fallback_activated,
                     }
+                    if fallback_activated and fallback_model:
+                        rewrite_output["fallback_model"] = fallback_model
                     if settings.langfuse_capture_content:
                         rewrite_output["rewritten_query"] = scrub_sensitive_data(rewritten)
                     rewrite_span.update(
@@ -154,7 +236,7 @@ async def rewrite_query_for_retrieval(
                 type(exc).__name__,
             )
             rewrite_span.update(
-                output={"fallback": True},
+                output={"fallback": True, "error": type(exc).__name__},
                 level="WARNING",
                 status_message=type(exc).__name__,
             )

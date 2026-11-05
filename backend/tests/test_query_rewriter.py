@@ -173,7 +173,7 @@ class TestQueryRewriter(unittest.IsolatedAsyncioTestCase):
         ]
 
         mock_groq_client = MagicMock()
-        mock_groq_client.chat.completions.create = AsyncMock(side_effect=RuntimeError("Groq 429 Rate limit"))
+        mock_groq_client.chat.completions.create = AsyncMock(side_effect=RuntimeError("Groq 500 Internal Server Error"))
 
         with (
             patch("app.rag.query_rewriter.settings.USE_GROQ_FOR_QUERY_REWRITE", True),

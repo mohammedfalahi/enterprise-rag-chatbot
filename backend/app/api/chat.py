@@ -13,7 +13,7 @@ from openai import AsyncOpenAI
 
 from app.core.security import get_current_user, CurrentUser
 from app.rag.hybrid_search import search_documents
-from app.rag.query_rewriter import rewrite_query_for_retrieval
+from app.rag.query_rewriter import rewrite_query_for_retrieval, is_rate_limit_error, is_auth_error
 from app.rag.intent_router import classify_conversational_intent
 from app.core.config import settings
 from app.core.rate_limiter import rate_limit
@@ -262,6 +262,47 @@ Context:
                     input=generation_input,
                 ) as generation_span:
                     generation_started = time.perf_counter()
+                    fallback_activated = False
+                    fallback_model: str | None = None
+                    retry_attempts = 0
+
+                    async def stream_gemini():
+                        nonlocal full_text, usage_details
+                        client = genai.Client(
+                            api_key=settings.GEMINI_API_KEY
+                            or os.environ.get("GEMINI_API_KEY"),
+                            vertexai=False,
+                        )
+                        response = client.models.generate_content_stream(
+                            model=settings.chat_llm_model,
+                            contents=prompt,
+                        )
+
+                        async def emit_chunk(chunk):
+                            chunk_text = getattr(chunk, "text", "") or ""
+                            usage = getattr(chunk, "usage_metadata", None)
+                            if usage is not None:
+                                for source, target in (
+                                    ("prompt_token_count", "input"),
+                                    ("candidates_token_count", "output"),
+                                    ("total_token_count", "total"),
+                                ):
+                                    token_count = getattr(usage, source, None)
+                                    if token_count is not None:
+                                        usage_details[target] = int(token_count)
+                            if chunk_text:
+                                full_text.append(chunk_text)
+                                yield f"data: {json.dumps({'type': 'content', 'text': chunk_text})}\n\n"
+
+                        if hasattr(response, "__aiter__"):
+                            async for chunk in response:
+                                async for frame in emit_chunk(chunk):
+                                    yield frame
+                        else:
+                            for chunk in response:
+                                async for frame in emit_chunk(chunk):
+                                    yield frame
+
                     try:
                         if use_groq:
                             groq_client = AsyncOpenAI(
@@ -270,69 +311,77 @@ Context:
                                 or "none",
                                 base_url=settings.GROQ_BASE_URL,
                             )
-                            stream_response = await groq_client.chat.completions.create(
-                                model=generation_model,
-                                messages=[{"role": "user", "content": prompt}],
-                                stream=True,
-                                stream_options={"include_usage": True},
-                            )
-                            async for chunk in stream_response:
-                                usage = getattr(chunk, "usage", None)
-                                if usage is not None:
-                                    for source, target in (
-                                        ("prompt_tokens", "input"),
-                                        ("completion_tokens", "output"),
-                                        ("total_tokens", "total"),
-                                    ):
-                                        token_count = getattr(usage, source, None)
-                                        if token_count is not None:
-                                            usage_details[target] = int(token_count)
-                                if chunk.choices and chunk.choices[0].delta:
-                                    chunk_text = (
-                                        getattr(chunk.choices[0].delta, "content", "") or ""
+                            max_retries = 2
+                            stream_response = None
+                            last_groq_exc = None
+
+                            for attempt in range(max_retries + 1):
+                                try:
+                                    stream_response = await groq_client.chat.completions.create(
+                                        model=generation_model,
+                                        messages=[{"role": "user", "content": prompt}],
+                                        stream=True,
+                                        stream_options={"include_usage": True},
                                     )
-                                    if chunk_text:
-                                        full_text.append(chunk_text)
-                                        yield (
-                                            f"data: {json.dumps({'type': 'content', 'text': chunk_text})}\n\n"
+                                    break
+                                except Exception as exc:
+                                    last_groq_exc = exc
+                                    retry_attempts = attempt
+                                    if is_rate_limit_error(exc) and not is_auth_error(exc) and attempt < max_retries:
+                                        delay = 0.5 * (2 ** attempt)
+                                        logger.warning(
+                                            "Primary LLM chat generation rate limited (429). Retrying in %.2fs (attempt %d/%d)...",
+                                            delay,
+                                            attempt + 1,
+                                            max_retries,
                                         )
-                        else:
-                            client = genai.Client(
-                                api_key=settings.GEMINI_API_KEY
-                                or os.environ.get("GEMINI_API_KEY"),
-                                vertexai=False,
-                            )
-                            response = client.models.generate_content_stream(
-                                model=generation_model,
-                                contents=prompt,
-                            )
+                                        await asyncio.sleep(delay)
+                                        continue
+                                    break
 
-                            async def emit_chunk(chunk):
-                                chunk_text = getattr(chunk, "text", "") or ""
-                                usage = getattr(chunk, "usage_metadata", None)
-                                if usage is not None:
-                                    for source, target in (
-                                        ("prompt_token_count", "input"),
-                                        ("candidates_token_count", "output"),
-                                        ("total_token_count", "total"),
-                                    ):
-                                        token_count = getattr(usage, source, None)
-                                        if token_count is not None:
-                                            usage_details[target] = int(token_count)
-                                if chunk_text:
-                                    full_text.append(chunk_text)
-                                    yield (
-                                        f"data: {json.dumps({'type': 'content', 'text': chunk_text})}\n\n"
+                            if stream_response is not None:
+                                try:
+                                    async for chunk in stream_response:
+                                        usage = getattr(chunk, "usage", None)
+                                        if usage is not None:
+                                            for source, target in (
+                                                ("prompt_tokens", "input"),
+                                                ("completion_tokens", "output"),
+                                                ("total_tokens", "total"),
+                                            ):
+                                                token_count = getattr(usage, source, None)
+                                                if token_count is not None:
+                                                    usage_details[target] = int(token_count)
+                                        if chunk.choices and chunk.choices[0].delta:
+                                            chunk_text = (
+                                                getattr(chunk.choices[0].delta, "content", "") or ""
+                                            )
+                                            if chunk_text:
+                                                full_text.append(chunk_text)
+                                                yield f"data: {json.dumps({'type': 'content', 'text': chunk_text})}\n\n"
+                                except Exception as stream_exc:
+                                    logger.error(
+                                        "Primary LLM stream interrupted mid-generation: %s",
+                                        stream_exc,
                                     )
+                                    raise stream_exc
+                            elif last_groq_exc is not None:
+                                if is_rate_limit_error(last_groq_exc) and not is_auth_error(last_groq_exc):
+                                    logger.warning(
+                                        "Primary LLM rate limit (429) persisted after retries. Switching to fallback Gemini (%s)...",
+                                        settings.chat_llm_model,
+                                    )
+                                    fallback_activated = True
+                                    fallback_model = settings.chat_llm_model
+                                    yield f"data: {json.dumps({'type': 'notice', 'text': 'Primary model is busy. Switched to fallback model.'})}\n\n"
+                                    async for frame in stream_gemini():
+                                        yield frame
+                                else:
+                                    raise last_groq_exc
+                        else:
+                            async for frame in stream_gemini():
+                                yield frame
 
-                            if hasattr(response, "__aiter__"):
-                                async for chunk in response:
-                                    async for frame in emit_chunk(chunk):
-                                        yield frame
-                            else:
-                                for chunk in response:
-                                    async for frame in emit_chunk(chunk):
-                                        yield frame
                     except Exception as exc:
                         generation_span.update(
                             output={
@@ -340,19 +389,25 @@ Context:
                                 "latency_ms": round(
                                     (time.perf_counter() - generation_started) * 1000, 2
                                 ),
+                                "fallback": fallback_activated,
                             },
                             usage_details=usage_details or None,
                             level="ERROR",
                             status_message=type(exc).__name__,
                         )
                         raise
+
                     assistant_reply = "".join(full_text).strip()
                     generation_output: dict[str, Any] = {
                         "output_chars": len(assistant_reply),
                         "latency_ms": round(
                             (time.perf_counter() - generation_started) * 1000, 2
                         ),
+                        "fallback": fallback_activated,
                     }
+                    if fallback_activated:
+                        generation_output["fallback_model"] = fallback_model
+                        generation_output["retry_attempts"] = retry_attempts
                     if settings.langfuse_capture_content:
                         generation_output["generated_answer"] = scrub_sensitive_data(
                             assistant_reply
@@ -399,7 +454,7 @@ Context:
                     level="ERROR",
                     status_message=type(exc).__name__,
                 )
-                yield f"data: {json.dumps({'error': 'The assistant could not complete this request. Please retry.'})}\n\n"
+                yield f"data: {json.dumps({'error': 'AI service is temporarily unavailable. Please try again. The assistant could not complete this request.'})}\n\n"
 
     return StreamingResponse(
         stream_generator(),
