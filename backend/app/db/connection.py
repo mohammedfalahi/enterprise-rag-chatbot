@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from psycopg_pool import AsyncConnectionPool
 from app.core.config import settings
@@ -44,4 +45,7 @@ async def close_db_pool():
     """Close the connection pool."""
     global pool
     if pool is not None and not pool.closed:
-        await pool.close()
+        try:
+            await pool.close()
+        except asyncio.CancelledError:
+            pass

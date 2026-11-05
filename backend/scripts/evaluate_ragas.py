@@ -14,7 +14,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
-from app.rag.embeddings import embed_texts
+from app.eval.metrics.generation import evaluate_ragas_records
 
 REQUIRED_FIELDS = ("user_input", "response", "retrieved_contexts", "reference")
 
@@ -60,88 +60,7 @@ def load_evaluation_records(path: str | Path) -> list[dict[str, Any]]:
 
 
 def run_ragas(records: list[dict[str, Any]]) -> dict[str, Any]:
-    api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Set GEMINI_API_KEY to run the offline Ragas evaluator.")
-
-    try:
-        from langchain_core.embeddings import Embeddings
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        from ragas import EvaluationDataset, evaluate
-        from ragas.embeddings import LangchainEmbeddingsWrapper
-        from ragas.llms import LangchainLLMWrapper
-        from ragas.metrics import (
-            AnswerCorrectness,
-            AnswerRelevancy,
-            Faithfulness,
-            LLMContextPrecisionWithReference,
-            LLMContextRecall,
-        )
-    except ImportError as exc:
-        raise RuntimeError(
-            "Install the evaluation extra with `uv sync --extra evaluation`."
-        ) from exc
-
-    class LocalOllamaEmbeddings(Embeddings):
-        def embed_documents(self, texts: list[str]) -> list[list[float]]:
-            return embed_texts(texts)
-
-        def embed_query(self, text: str) -> list[float]:
-            return embed_texts([text])[0]
-
-    evaluator_llm = LangchainLLMWrapper(
-        ChatGoogleGenerativeAI(
-            model=settings.chat_llm_model,
-            google_api_key=api_key,
-            temperature=0,
-        )
-    )
-    evaluator_embeddings = LangchainEmbeddingsWrapper(
-        LocalOllamaEmbeddings()
-    )
-    dataset = EvaluationDataset.from_list(records)
-    result = evaluate(
-        dataset=dataset,
-        metrics=[
-            Faithfulness(),
-            AnswerRelevancy(),
-            LLMContextPrecisionWithReference(),
-            LLMContextRecall(),
-            AnswerCorrectness(),
-        ],
-        llm=evaluator_llm,
-        embeddings=evaluator_embeddings,
-    )
-
-    metric_values: dict[str, list[float]] = {}
-    per_question_scores: list[dict[str, Any]] = []
-
-    for i, row in enumerate(result.scores):
-        row_scores = {}
-        for name, value in row.items():
-            if isinstance(value, (int, float)):
-                metric_values.setdefault(name, []).append(float(value))
-                row_scores[name] = round(float(value), 4)
-        per_question_scores.append(
-            {
-                "user_input": records[i]["user_input"],
-                "response": records[i]["response"],
-                "reference": records[i]["reference"],
-                "scores": row_scores,
-            }
-        )
-
-    aggregate = {
-        name: round(sum(values) / len(values), 4)
-        for name, values in metric_values.items()
-        if values
-    }
-
-    return {
-        "record_count": len(records),
-        "aggregate_metrics": aggregate,
-        "per_question_scores": per_question_scores,
-    }
+    return evaluate_ragas_records(records)
 
 
 def main() -> None:

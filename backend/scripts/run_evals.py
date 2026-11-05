@@ -27,7 +27,8 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.db.connection import close_db_pool, get_db_connection, init_db_pool
 from app.rag.hybrid_search import RetrievalResult, search_documents
-from scripts.ingest_benchmark import doc_id_to_uuid
+from app.eval.metrics.retrieval import compute_ranking_metrics_at_k, doc_id_to_uuid
+from app.eval.metrics.refusal import compute_refusal_metrics
 
 DEFAULT_GOLDEN_PATH = "/Users/falahi/datasets-test/data/golden.jsonl"
 DEFAULT_INJECTION_PATH = "/Users/falahi/datasets-test/data/injection.jsonl"
@@ -39,30 +40,8 @@ def ranking_metrics_at_k(
     gold_document_ids: set[str],
     k: int = 5,
 ) -> dict[str, float]:
-    """Compute binary document-level metrics after deduplicating ranked documents."""
-    if k <= 0:
-        raise ValueError("k must be greater than zero")
-    if not gold_document_ids:
-        raise ValueError("gold_document_ids must not be empty")
-
-    unique_ranked_ids = list(dict.fromkeys(ranked_document_ids))[:k]
-    relevant_ranks = [
-        rank
-        for rank, document_id in enumerate(unique_ranked_ids, start=1)
-        if document_id in gold_document_ids
-    ]
-    dcg = sum(1 / math.log2(rank + 1) for rank in relevant_ranks)
-    ideal_relevant_count = min(len(gold_document_ids), k)
-    idcg = sum(
-        1 / math.log2(rank + 1)
-        for rank in range(1, ideal_relevant_count + 1)
-    )
-    return {
-        f"precision@{k}": len(relevant_ranks) / k,
-        f"recall@{k}": len(relevant_ranks) / len(gold_document_ids),
-        "mrr": 1 / relevant_ranks[0] if relevant_ranks else 0.0,
-        f"ndcg@{k}": dcg / idcg if idcg else 0.0,
-    }
+    """Compute binary document-level metrics using centralized eval layer."""
+    return compute_ranking_metrics_at_k(ranked_document_ids, gold_document_ids, k=k)
 
 
 async def evaluate_golden(
@@ -178,6 +157,7 @@ async def evaluate_golden(
                 "retrieved_doc_ids": [r.document_id for r in results],
                 "retrieved_chunk_ids": [r.chunk_id for r in results],
                 "retrieved_titles": [r.title for r in results],
+                "is_refused": len(results) == 0,
                 "metrics": metrics,
             }
         )
@@ -233,6 +213,8 @@ async def evaluate_golden(
         for role in ("employee", "sales_rep", "manager", "executive")
     }
 
+    refusal_metrics = compute_refusal_metrics(per_query_records)
+
     return {
         "total_tests": len(records),
         "mean_recall_at_k": round(mean_recall, 4) if mean_recall is not None else None,
@@ -240,6 +222,7 @@ async def evaluate_golden(
             "count": len(query_metrics),
             **summarize_metrics(query_metrics),
         },
+        "refusal_metrics": refusal_metrics.model_dump(),
         "permission_leakage_count": leakage_count,
         "permission_leakage_rate": round(leakage_rate, 4) if leakage_rate is not None else None,
         "categories": category_summary,
@@ -432,6 +415,11 @@ async def run_evaluations(
         f"{refusal_rate * 100:.2f}%" if refusal_rate is not None else "N/A"
     )
     print(f"Injection Refusal Rate:     {refusal_report} (Target: 100%)")
+    ref_m = golden_results.get("refusal_metrics", {})
+    if ref_m:
+        print(f"Refusal Precision:          {ref_m.get('precision', 1.0) * 100:.2f}%")
+        print(f"Refusal Recall:             {ref_m.get('recall', 1.0) * 100:.2f}%")
+        print(f"Refusal F1 Score:           {ref_m.get('f1_score', 1.0):.4f}")
     print("=======================================================")
 
     return report

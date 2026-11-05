@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -16,6 +17,7 @@ from app.rag.query_rewriter import rewrite_query_for_retrieval
 from app.rag.intent_router import classify_conversational_intent
 from app.core.config import settings
 from app.core.rate_limiter import rate_limit
+from app.eval.guardrails import evaluate_grounding_async
 from app.observability.redaction import scrub_sensitive_data
 from app.observability.tracing import trace_span
 from app.db.conversations import (
@@ -368,6 +370,14 @@ Context:
                         role="assistant",
                         content=assistant_reply,
                         citations=citations,
+                    )
+                    # Non-blocking async runtime grounding and hallucination verification
+                    asyncio.create_task(
+                        evaluate_grounding_async(
+                            query=search_query,
+                            contexts=[r.content for r in results],
+                            response=assistant_reply,
+                        )
                     )
 
                 yield "data: [DONE]\n\n"
