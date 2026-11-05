@@ -8,6 +8,7 @@ import ChatWindow from "../components/ChatWindow";
 import RoleDashboard from "../components/RoleDashboard";
 import DocumentUploadModal from "../components/DocumentUploadModal";
 import UserManagement from "../components/UserManagement";
+import AdminEvaluationDashboard from "../components/AdminEvaluationDashboard";
 import { useRouter } from "next/navigation";
 import type { UserProfile } from "../lib/types";
 
@@ -15,7 +16,7 @@ export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"chat" | "hub" | "users">("chat");
+  const [activeView, setActiveView] = useState<"chat" | "hub" | "users" | "evaluations">("chat");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const router = useRouter();
@@ -116,8 +117,13 @@ export default function Home() {
           onAskQuestion={handleAskFromHub}
           onOpenUploadModal={() => setIsUploadModalOpen(true)}
         />
-      ) : userRoles.includes("manager") ? (
+      ) : activeView === "users" && userRoles.includes("manager") ? (
         <UserManagement />
+      ) : activeView === "evaluations" &&
+        (userRoles.includes("executive") ||
+          userRoles.includes("admin") ||
+          userRoles.includes("manager")) ? (
+        <AdminEvaluationDashboard />
       ) : (
         <ChatWindow
           isSidebarOpen={isSidebarOpen}

@@ -9,8 +9,8 @@ interface AppHeaderProps {
   tenantId: string | null;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
-  activeView?: "chat" | "hub" | "users";
-  onViewChange?: (view: "chat" | "hub" | "users") => void;
+  activeView?: "chat" | "hub" | "users" | "evaluations";
+  onViewChange?: (view: "chat" | "hub" | "users" | "evaluations") => void;
 }
 
 function formatRoleLabel(role: string): string {
@@ -127,6 +127,18 @@ export default function AppHeader({
               }`}
             >
               User Management
+            </button>
+          )}
+          {(roles.includes("executive") || roles.includes("admin") || roles.includes("manager")) && (
+            <button
+              onClick={() => onViewChange("evaluations")}
+              className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                activeView === "evaluations"
+                  ? "bg-white text-indigo-700 shadow-2xs font-semibold"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              AI Efficacy Dashboard
             </button>
           )}
         </nav>
