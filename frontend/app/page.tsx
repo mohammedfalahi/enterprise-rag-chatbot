@@ -7,6 +7,7 @@ import AppHeader from "../components/AppHeader";
 import ChatWindow from "../components/ChatWindow";
 import RoleDashboard from "../components/RoleDashboard";
 import DocumentUploadModal from "../components/DocumentUploadModal";
+import UserManagement from "../components/UserManagement";
 import { useRouter } from "next/navigation";
 import type { UserProfile } from "../lib/types";
 
@@ -14,7 +15,7 @@ export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState<"chat" | "hub">("chat");
+  const [activeView, setActiveView] = useState<"chat" | "hub" | "users">("chat");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const router = useRouter();
@@ -108,12 +109,21 @@ export default function Home() {
           roles={userRoles}
           initialPrompt={initialPrompt}
         />
-      ) : (
+      ) : activeView === "hub" ? (
         <RoleDashboard
           roles={userRoles}
           tenantId={profile?.tenant_id ?? null}
           onAskQuestion={handleAskFromHub}
           onOpenUploadModal={() => setIsUploadModalOpen(true)}
+        />
+      ) : userRoles.includes("manager") ? (
+        <UserManagement />
+      ) : (
+        <ChatWindow
+          isSidebarOpen={isSidebarOpen}
+          onCloseSidebar={() => setIsSidebarOpen(false)}
+          roles={userRoles}
+          initialPrompt={null}
         />
       )}
 

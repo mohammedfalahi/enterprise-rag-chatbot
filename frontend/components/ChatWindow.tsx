@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { BACKEND_URL } from "../lib/api";
 import Sidebar from "./Sidebar";
+import MarkdownMessage from "./MarkdownMessage";
 import type { Citation, ChatMessage, ConversationSummary } from "../lib/types";
 
 interface ChatWindowProps {
@@ -296,6 +297,7 @@ export default function ChatWindow({
       if (res.body) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
+        let pendingLine = "";
         streamRef.current = { content: "", citations: [] };
 
         setMessages((prev) => [
@@ -303,59 +305,63 @@ export default function ChatWindow({
           { role: "assistant", content: "", citations: [] },
         ]);
 
+        const handleSSELine = (line: string) => {
+          if (!line.startsWith("data: ") || line === "data: [DONE]") return;
+
+          let data: Record<string, unknown>;
+          try {
+            const parsed: unknown = JSON.parse(line.slice(6));
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+              throw new Error("SSE payload must be a JSON object.");
+            }
+            data = parsed as Record<string, unknown>;
+          } catch (error) {
+            console.error("Failed to parse a complete chat stream event:", error);
+            throw new Error("The assistant returned an invalid stream event.");
+          }
+
+          if (typeof data.conversation_id === "string" && !activeConversationId) {
+            setActiveConversationId(data.conversation_id);
+          }
+          if (typeof data.title === "string" && activeTitle === "New Conversation") {
+            setActiveTitle(data.title);
+          }
+
+          if (data.type === "citations" && Array.isArray(data.citations)) {
+            streamRef.current = {
+              ...streamRef.current,
+              citations: data.citations as Citation[],
+            };
+          } else if (typeof data.text === "string") {
+            streamRef.current = {
+              ...streamRef.current,
+              content: streamRef.current.content + data.text,
+            };
+          }
+
+          const currentMessage = { ...streamRef.current };
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            {
+              role: "assistant",
+              content: currentMessage.content,
+              citations: currentMessage.citations,
+            },
+          ]);
+        };
+
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const data = JSON.parse(line.slice(6));
-
-                if (data.conversation_id && !activeConversationId) {
-                  setActiveConversationId(data.conversation_id);
-                }
-                if (data.title && activeTitle === "New Conversation") {
-                  setActiveTitle(data.title);
-                }
-
-                if (data.type === "citations" && Array.isArray(data.citations)) {
-                  streamRef.current = {
-                    ...streamRef.current,
-                    citations: data.citations,
-                  };
-                  const currentMsg = { ...streamRef.current };
-                  setMessages((prev) => [
-                    ...prev.slice(0, -1),
-                    {
-                      role: "assistant",
-                      content: currentMsg.content,
-                      citations: currentMsg.citations,
-                    },
-                  ]);
-                } else if (data.text) {
-                  streamRef.current = {
-                    ...streamRef.current,
-                    content: streamRef.current.content + data.text,
-                  };
-                  const currentMsg = { ...streamRef.current };
-                  setMessages((prev) => [
-                    ...prev.slice(0, -1),
-                    {
-                      role: "assistant",
-                      content: currentMsg.content,
-                      citations: currentMsg.citations,
-                    },
-                  ]);
-                }
-              } catch {
-                // Ignore incomplete SSE chunks
-              }
-            }
+          pendingLine += decoder.decode(value, { stream: !done });
+          let newlineIndex = pendingLine.indexOf("\n");
+          while (newlineIndex !== -1) {
+            handleSSELine(pendingLine.slice(0, newlineIndex).replace(/\r$/, ""));
+            pendingLine = pendingLine.slice(newlineIndex + 1);
+            newlineIndex = pendingLine.indexOf("\n");
           }
+          if (done) break;
         }
+        if (pendingLine) handleSSELine(pendingLine.replace(/\r$/, ""));
       }
 
       await refreshConversations();
@@ -377,7 +383,7 @@ export default function ChatWindow({
   };
 
   return (
-    <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden relative">
+    <div className="relative flex h-[calc(100dvh-7rem)] min-h-0 flex-1 overflow-hidden md:h-[calc(100dvh-4rem)]">
       {/* Responsive Collapsible Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -394,9 +400,9 @@ export default function ChatWindow({
       />
 
       {/* Main Chat Panel */}
-      <section className="flex-1 flex flex-col justify-between bg-slate-50 min-w-0 overflow-hidden">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col justify-between overflow-hidden bg-slate-50">
         {/* Active Thread Header */}
-        <header className="px-4 sm:px-6 py-3 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0 shadow-2xs">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
           <div className="min-w-0 flex-1 mr-2">
             {isEditingHeaderTitle ? (
               <form
@@ -484,7 +490,7 @@ export default function ChatWindow({
         </header>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-3 py-5 sm:px-6 sm:py-7">
           {loadingHistory ? (
             <div className="flex flex-col items-center justify-center h-full text-sm text-slate-500 space-y-2">
               <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -492,15 +498,17 @@ export default function ChatWindow({
             </div>
           ) : messages.length === 0 ? (
             /* Role-Aware Empty State with Starter Prompts */
-            <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto p-4 text-center space-y-6">
-              <div className="space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-xl shadow-2xs mx-auto">
-                  💡
+            <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center space-y-8 p-4 text-center">
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-700">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M12 3v2m6.364.636-1.414 1.414M21 12h-2m-.636 6.364-1.414-1.414M12 21v-2m-6.364-.636 1.414-1.414M3 12h2m.636-6.364 1.414 1.414M9 9l6 6m0-6-6 6" />
+                  </svg>
                 </div>
-                <h3 className="font-semibold text-slate-800 text-lg sm:text-xl">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
                   Enterprise Knowledge Assistant
                 </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                <p className="mx-auto max-w-lg text-sm leading-6 text-slate-600">
                   Answers are grounded in enterprise documentation authorized for your{" "}
                   <span className="font-medium text-slate-700">
                     {formatRoleLabel(primaryRole)}
@@ -510,13 +518,13 @@ export default function ChatWindow({
               </div>
 
               {/* Starter Prompt Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left">
+              <div className="grid w-full grid-cols-1 gap-3 text-left sm:grid-cols-2">
                 {starterPrompts.map((promptText, pIdx) => (
                   <button
                     key={pIdx}
                     onClick={() => sendMessage(promptText)}
                     disabled={loading}
-                    className="p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 hover:border-indigo-300 text-slate-700 hover:text-indigo-900 transition-all text-xs font-medium flex items-center justify-between group shadow-2xs cursor-pointer"
+                    className="group flex min-h-16 cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-900"
                   >
                     <span className="truncate pr-2">{promptText}</span>
                     <span className="text-slate-400 group-hover:text-indigo-600 transition-transform group-hover:translate-x-0.5 shrink-0">
@@ -530,33 +538,33 @@ export default function ChatWindow({
             messages.map((m, i) => (
               <div
                 key={i}
-                className={`flex gap-3 ${
+                className={`mx-auto flex w-full max-w-4xl gap-3 sm:gap-4 ${
                   m.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {/* Assistant Avatar */}
                 {m.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs mt-1">
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-700 text-xs font-semibold text-white">
                     EK
                   </div>
                 )}
 
                 <div
-                  className={`group relative p-4 rounded-2xl text-sm leading-relaxed ${
+                  className={`group relative min-w-0 max-w-[92%] rounded-2xl px-4 py-3.5 text-sm leading-6 sm:px-5 sm:py-4 ${
                     m.role === "user"
-                      ? "bg-indigo-600 text-white max-w-[85%] sm:max-w-[75%] rounded-br-xs shadow-xs"
-                      : "bg-white text-slate-900 max-w-[90%] sm:max-w-[85%] rounded-bl-xs border border-slate-200/80 shadow-xs"
+                      ? "max-w-[88%] rounded-br-sm bg-indigo-700 text-white sm:max-w-[78%]"
+                      : "flex-1 border border-slate-200 bg-white text-slate-800"
                   }`}
                 >
                   {/* Assistant Message Header Bar with Copy Action */}
                   {m.role === "assistant" && (
-                    <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 text-xs text-slate-400">
-                      <span className="font-medium text-slate-600 text-[11px]">
+                    <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2 text-xs text-slate-400">
+                      <span className="text-xs font-semibold text-slate-700">
                         Enterprise Assistant
                       </span>
                       <button
                         onClick={() => copyMessageContent(m.content, i)}
-                        className="flex items-center space-x-1 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition text-[11px]"
+                        className="flex items-center space-x-1 rounded-md p-1.5 text-xs transition hover:bg-slate-100 hover:text-slate-700"
                         title="Copy message to clipboard"
                       >
                         {copiedIndex === i ? (
@@ -578,12 +586,12 @@ export default function ChatWindow({
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap">{m.content}</div>
+                  <MarkdownMessage content={m.content} />
 
                   {/* Rich Sources & Citations */}
                   {m.citations && m.citations.length > 0 && (
-                    <div className="mt-3.5 pt-2.5 border-t border-slate-200 text-xs text-slate-600">
-                      <div className="font-semibold text-slate-700 mb-2 flex items-center space-x-1.5">
+                    <div className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                      <div className="mb-2.5 flex items-center space-x-2 font-semibold text-slate-700">
                         <svg
                           className="w-3.5 h-3.5 text-indigo-600"
                           fill="none"
@@ -597,34 +605,54 @@ export default function ChatWindow({
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                           />
                         </svg>
-                        <span>Verified Citations ({m.citations.length}):</span>
+                        <span>Sources</span>
                       </div>
-                      <div className="space-y-2">
-                        {m.citations.map((c, cIdx) => (
-                          <div
-                            key={cIdx}
-                            className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/90 text-slate-800 space-y-1 hover:border-slate-300 transition"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-slate-900 text-xs truncate">
-                                📄 {c.title}
-                              </span>
-                              <span className="inline-block px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-mono border border-indigo-100 shrink-0">
-                                score: {c.score}
-                              </span>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {m.citations.map((c, cIdx) => {
+                          const sourcePath = c.heading_path
+                            ?.filter(
+                              (part) =>
+                                part.trim() &&
+                                part.toLocaleLowerCase() !==
+                                  c.title?.trim().toLocaleLowerCase(),
+                            )
+                            .join(" / ");
+
+                          return (
+                            <div
+                              key={cIdx}
+                              className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-slate-800"
+                            >
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.8}
+                                    d="M7 3.75h7l4.25 4.25v12A1.25 1.25 0 0117 21.25H7A1.25 1.25 0 015.75 20V5A1.25 1.25 0 017 3.75zM14 4v4h4M8.5 13h7m-7 3.5h7"
+                                  />
+                                </svg>
+                                <span className="line-clamp-2 min-w-0 font-medium leading-5 text-slate-900">
+                                  {c.title || "Source document"}
+                                </span>
+                              </div>
+                              {sourcePath && (
+                                <p
+                                  className="ml-6 mt-1 truncate text-xs text-slate-500"
+                                  title={sourcePath}
+                                >
+                                  {sourcePath}
+                                </p>
+                              )}
                             </div>
-                            {c.heading_path && c.heading_path.length > 0 && (
-                              <div className="text-[11px] text-slate-500 font-medium">
-                                Path: {c.heading_path.join(" → ")}
-                              </div>
-                            )}
-                            {c.chunk_id && (
-                              <div className="text-[10px] text-slate-400 font-mono">
-                                chunk: {c.chunk_id.slice(0, 12)}...
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -632,7 +660,7 @@ export default function ChatWindow({
 
                 {/* User Avatar */}
                 {m.role === "user" && (
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs mt-1">
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-[10px] font-semibold text-slate-700">
                     You
                   </div>
                 )}
@@ -684,31 +712,41 @@ export default function ChatWindow({
         )}
 
         {/* Input Bar */}
-        <div className="p-3 sm:p-4 border-t border-slate-200/80 bg-white shrink-0">
-          <div className="max-w-4xl mx-auto flex items-center gap-2">
-            <input
-              type="text"
+        <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3 sm:px-6 sm:py-4">
+          <form
+            className="mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border border-slate-300 bg-slate-50 p-2 transition focus-within:border-indigo-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendMessage();
+            }}
+          >
+            <textarea
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && !e.shiftKey && sendMessage()
-              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
               disabled={loading}
-              className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent transition disabled:bg-slate-100"
+              className="max-h-40 min-h-10 flex-1 resize-y bg-transparent px-3 py-2 text-sm leading-6 text-slate-900 placeholder-slate-400 focus:outline-none disabled:cursor-not-allowed"
               placeholder={
                 loading
                   ? "Awaiting assistant response..."
                   : `Ask a question as ${formatRoleLabel(primaryRole)}...`
               }
+              aria-label="Message"
             />
             <button
-              onClick={() => sendMessage()}
+              type="submit"
               disabled={loading || !input.trim()}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed shadow-xs shrink-0 cursor-pointer"
+              className="shrink-0 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Send
             </button>
-          </div>
+          </form>
         </div>
       </section>
     </div>

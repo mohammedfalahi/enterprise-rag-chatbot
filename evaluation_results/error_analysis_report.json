@@ -1,0 +1,3737 @@
+[
+  {
+    "test_id": "qst_0428:employee",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 9 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0428:employee",
+      "question_id": "qst_0428",
+      "role": "employee",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "What monthly token volume discount breakpoints apply for Hosted pricing in the enterprise playbook?",
+      "answer_facts": [
+        "The answer must state that the Hosted volume discount breakpoints are 250k, 2M, and 10M monthly tokens.",
+        "If the answer mentions prior breakpoints, it must identify 100k, 1M, and 5M monthly tokens as the older/outdated values.",
+        "The answer must not introduce any other token-breakpoint numbers beyond 250k/2M/10M and (optionally) the outdated 100k/1M/5M.",
+        "The answer must not invent specific discount percentages or per-token rates associated with the breakpoints.",
+        "The answer may note that the updated breakpoints are in a working draft and should be confirmed with Sales Ops/Finance; it must not claim they are definitively finalized if it includes that caveat."
+      ],
+      "gold_doc_ids": [
+        "dsid_1214ee9ab5e44de487c800f7a4771d7d",
+        "dsid_10559147d3014931898864f22c311e47"
+      ],
+      "gold_uuids": [
+        "f919b2c1-500b-58c0-bb7d-49349a8fc2ad",
+        "8402f97c-3857-5d18-a4ae-1ac8f3237c79"
+      ],
+      "retrieved_doc_ids": [
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762",
+        "134558e2-c1ed-5ff6-83ec-13f37342df3e",
+        "be0374c4-da99-5cbf-ac8b-30b0e41b3116",
+        "5adee868-8079-5a62-982e-4798f415801d",
+        "db0901e2-8db4-5972-b479-6f77740535f7"
+      ],
+      "retrieved_chunk_ids": [
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762#0001",
+        "134558e2-c1ed-5ff6-83ec-13f37342df3e#0000",
+        "be0374c4-da99-5cbf-ac8b-30b0e41b3116#0000",
+        "5adee868-8079-5a62-982e-4798f415801d#0002",
+        "db0901e2-8db4-5972-b479-6f77740535f7#0000"
+      ],
+      "retrieved_titles": [
+        "sales",
+        "product",
+        "marketing",
+        "support",
+        "Token Ark \u2014 Pricing Palette and Export Flows"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 9
+  },
+  {
+    "test_id": "qst_0428:sales_rep",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 9 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0428:sales_rep",
+      "question_id": "qst_0428",
+      "role": "sales_rep",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "What monthly token volume discount breakpoints apply for Hosted pricing in the enterprise playbook?",
+      "answer_facts": [
+        "The answer must state that the Hosted volume discount breakpoints are 250k, 2M, and 10M monthly tokens.",
+        "If the answer mentions prior breakpoints, it must identify 100k, 1M, and 5M monthly tokens as the older/outdated values.",
+        "The answer must not introduce any other token-breakpoint numbers beyond 250k/2M/10M and (optionally) the outdated 100k/1M/5M.",
+        "The answer must not invent specific discount percentages or per-token rates associated with the breakpoints.",
+        "The answer may note that the updated breakpoints are in a working draft and should be confirmed with Sales Ops/Finance; it must not claim they are definitively finalized if it includes that caveat."
+      ],
+      "gold_doc_ids": [
+        "dsid_1214ee9ab5e44de487c800f7a4771d7d",
+        "dsid_10559147d3014931898864f22c311e47"
+      ],
+      "gold_uuids": [
+        "f919b2c1-500b-58c0-bb7d-49349a8fc2ad",
+        "8402f97c-3857-5d18-a4ae-1ac8f3237c79"
+      ],
+      "retrieved_doc_ids": [
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762",
+        "134558e2-c1ed-5ff6-83ec-13f37342df3e",
+        "be0374c4-da99-5cbf-ac8b-30b0e41b3116",
+        "5adee868-8079-5a62-982e-4798f415801d",
+        "db0901e2-8db4-5972-b479-6f77740535f7"
+      ],
+      "retrieved_chunk_ids": [
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762#0001",
+        "134558e2-c1ed-5ff6-83ec-13f37342df3e#0000",
+        "be0374c4-da99-5cbf-ac8b-30b0e41b3116#0000",
+        "5adee868-8079-5a62-982e-4798f415801d#0002",
+        "db0901e2-8db4-5972-b479-6f77740535f7#0000"
+      ],
+      "retrieved_titles": [
+        "sales",
+        "product",
+        "marketing",
+        "support",
+        "Token Ark \u2014 Pricing Palette and Export Flows"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 9
+  },
+  {
+    "test_id": "qst_0428:manager",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 30 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0428:manager",
+      "question_id": "qst_0428",
+      "role": "manager",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "What monthly token volume discount breakpoints apply for Hosted pricing in the enterprise playbook?",
+      "answer_facts": [
+        "The answer must state that the Hosted volume discount breakpoints are 250k, 2M, and 10M monthly tokens.",
+        "If the answer mentions prior breakpoints, it must identify 100k, 1M, and 5M monthly tokens as the older/outdated values.",
+        "The answer must not introduce any other token-breakpoint numbers beyond 250k/2M/10M and (optionally) the outdated 100k/1M/5M.",
+        "The answer must not invent specific discount percentages or per-token rates associated with the breakpoints.",
+        "The answer may note that the updated breakpoints are in a working draft and should be confirmed with Sales Ops/Finance; it must not claim they are definitively finalized if it includes that caveat."
+      ],
+      "gold_doc_ids": [
+        "dsid_1214ee9ab5e44de487c800f7a4771d7d",
+        "dsid_10559147d3014931898864f22c311e47"
+      ],
+      "gold_uuids": [
+        "f919b2c1-500b-58c0-bb7d-49349a8fc2ad",
+        "8402f97c-3857-5d18-a4ae-1ac8f3237c79"
+      ],
+      "retrieved_doc_ids": [
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f",
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f"
+      ],
+      "retrieved_chunk_ids": [
+        "65ce7167-c243-52d6-b518-1c63cccda547#0004",
+        "65ce7167-c243-52d6-b518-1c63cccda547#0006",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0004",
+        "65ce7167-c243-52d6-b518-1c63cccda547#0005",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0006"
+      ],
+      "retrieved_titles": [
+        "Hosted API IO rates + supported serving models for pilot",
+        "Hosted API IO rates + supported serving models for pilot",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)",
+        "Hosted API IO rates + supported serving models for pilot",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 30
+  },
+  {
+    "test_id": "qst_0428:executive",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 30 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0428:executive",
+      "question_id": "qst_0428",
+      "role": "executive",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "What monthly token volume discount breakpoints apply for Hosted pricing in the enterprise playbook?",
+      "answer_facts": [
+        "The answer must state that the Hosted volume discount breakpoints are 250k, 2M, and 10M monthly tokens.",
+        "If the answer mentions prior breakpoints, it must identify 100k, 1M, and 5M monthly tokens as the older/outdated values.",
+        "The answer must not introduce any other token-breakpoint numbers beyond 250k/2M/10M and (optionally) the outdated 100k/1M/5M.",
+        "The answer must not invent specific discount percentages or per-token rates associated with the breakpoints.",
+        "The answer may note that the updated breakpoints are in a working draft and should be confirmed with Sales Ops/Finance; it must not claim they are definitively finalized if it includes that caveat."
+      ],
+      "gold_doc_ids": [
+        "dsid_1214ee9ab5e44de487c800f7a4771d7d",
+        "dsid_10559147d3014931898864f22c311e47"
+      ],
+      "gold_uuids": [
+        "f919b2c1-500b-58c0-bb7d-49349a8fc2ad",
+        "8402f97c-3857-5d18-a4ae-1ac8f3237c79"
+      ],
+      "retrieved_doc_ids": [
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f",
+        "65ce7167-c243-52d6-b518-1c63cccda547",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f"
+      ],
+      "retrieved_chunk_ids": [
+        "65ce7167-c243-52d6-b518-1c63cccda547#0004",
+        "65ce7167-c243-52d6-b518-1c63cccda547#0006",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0004",
+        "65ce7167-c243-52d6-b518-1c63cccda547#0005",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0006"
+      ],
+      "retrieved_titles": [
+        "Hosted API IO rates + supported serving models for pilot",
+        "Hosted API IO rates + supported serving models for pilot",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)",
+        "Hosted API IO rates + supported serving models for pilot",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 30
+  },
+  {
+    "test_id": "qst_0183:employee",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 23 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0183:employee",
+      "question_id": "qst_0183",
+      "role": "employee",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "What are the specific gate thresholds used to automatically decide whether a compressed model variant is allowed, canaried, or blocked, including the limits for chat similarity drop, code pass rate change, retrieval embedding quality, and acceptable latency and cost changes?",
+      "answer_facts": [
+        "For chat or completion, mean embedding cosine drop must be 0.012 or less and the 99th percentile semantic delta must be 0.02 or less.",
+        "For code generation, pass@1 drop must be 1.5 percentage points or less and compilation failure delta must be 0.5 percentage points or less.",
+        "For embeddings, mean cosine similarity drop must be 0.015 or less and downstream retrieval MAP drop must be 0.8 percent or less.",
+        "For latency and cost, p50 latency must not increase by more than 8 percent for the target serving configuration and cost per unit must decrease by at least 12 percent.",
+        "Any breach of a primary threshold results in FAIL and the variant is blocked.",
+        "If primary thresholds pass but secondary or edge slice regressions exceed 95th percentile thresholds, the gate result is WARN for manual review and this often leads to a canary recommendation."
+      ],
+      "gold_doc_ids": [
+        "dsid_693c023c88264795a7e98c7737e6459e"
+      ],
+      "gold_uuids": [
+        "62316453-d68b-57a1-a0ae-1f6940c1b9e7"
+      ],
+      "retrieved_doc_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "5e76d8d4-86c8-548c-8de9-c3ae79d8f717"
+      ],
+      "retrieved_chunk_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0013",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1#0000",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26#0000",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0020",
+        "5e76d8d4-86c8-548c-8de9-c3ae79d8f717#0000"
+      ],
+      "retrieved_titles": [
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "sales",
+        "sales",
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "eng-platform"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 23
+  },
+  {
+    "test_id": "qst_0183:sales_rep",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 23 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0183:sales_rep",
+      "question_id": "qst_0183",
+      "role": "sales_rep",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "What are the specific gate thresholds used to automatically decide whether a compressed model variant is allowed, canaried, or blocked, including the limits for chat similarity drop, code pass rate change, retrieval embedding quality, and acceptable latency and cost changes?",
+      "answer_facts": [
+        "For chat or completion, mean embedding cosine drop must be 0.012 or less and the 99th percentile semantic delta must be 0.02 or less.",
+        "For code generation, pass@1 drop must be 1.5 percentage points or less and compilation failure delta must be 0.5 percentage points or less.",
+        "For embeddings, mean cosine similarity drop must be 0.015 or less and downstream retrieval MAP drop must be 0.8 percent or less.",
+        "For latency and cost, p50 latency must not increase by more than 8 percent for the target serving configuration and cost per unit must decrease by at least 12 percent.",
+        "Any breach of a primary threshold results in FAIL and the variant is blocked.",
+        "If primary thresholds pass but secondary or edge slice regressions exceed 95th percentile thresholds, the gate result is WARN for manual review and this often leads to a canary recommendation."
+      ],
+      "gold_doc_ids": [
+        "dsid_693c023c88264795a7e98c7737e6459e"
+      ],
+      "gold_uuids": [
+        "62316453-d68b-57a1-a0ae-1f6940c1b9e7"
+      ],
+      "retrieved_doc_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "5e76d8d4-86c8-548c-8de9-c3ae79d8f717"
+      ],
+      "retrieved_chunk_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0013",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1#0000",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26#0000",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0020",
+        "5e76d8d4-86c8-548c-8de9-c3ae79d8f717#0000"
+      ],
+      "retrieved_titles": [
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "sales",
+        "sales",
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "eng-platform"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 23
+  },
+  {
+    "test_id": "qst_0183:manager",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 25 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0183:manager",
+      "question_id": "qst_0183",
+      "role": "manager",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "What are the specific gate thresholds used to automatically decide whether a compressed model variant is allowed, canaried, or blocked, including the limits for chat similarity drop, code pass rate change, retrieval embedding quality, and acceptable latency and cost changes?",
+      "answer_facts": [
+        "For chat or completion, mean embedding cosine drop must be 0.012 or less and the 99th percentile semantic delta must be 0.02 or less.",
+        "For code generation, pass@1 drop must be 1.5 percentage points or less and compilation failure delta must be 0.5 percentage points or less.",
+        "For embeddings, mean cosine similarity drop must be 0.015 or less and downstream retrieval MAP drop must be 0.8 percent or less.",
+        "For latency and cost, p50 latency must not increase by more than 8 percent for the target serving configuration and cost per unit must decrease by at least 12 percent.",
+        "Any breach of a primary threshold results in FAIL and the variant is blocked.",
+        "If primary thresholds pass but secondary or edge slice regressions exceed 95th percentile thresholds, the gate result is WARN for manual review and this often leads to a canary recommendation."
+      ],
+      "gold_doc_ids": [
+        "dsid_693c023c88264795a7e98c7737e6459e"
+      ],
+      "gold_uuids": [
+        "62316453-d68b-57a1-a0ae-1f6940c1b9e7"
+      ],
+      "retrieved_doc_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1",
+        "c4081ba2-bb14-5d56-aa58-3037ff60fe1e",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f"
+      ],
+      "retrieved_chunk_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0013",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1#0000",
+        "c4081ba2-bb14-5d56-aa58-3037ff60fe1e#0003",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26#0000",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0020"
+      ],
+      "retrieved_titles": [
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "sales",
+        "POC Eval Artifacts & Decision Handoff \u2014 Vanguard Analytics",
+        "sales",
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 25
+  },
+  {
+    "test_id": "qst_0183:executive",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 25 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0183:executive",
+      "question_id": "qst_0183",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "What are the specific gate thresholds used to automatically decide whether a compressed model variant is allowed, canaried, or blocked, including the limits for chat similarity drop, code pass rate change, retrieval embedding quality, and acceptable latency and cost changes?",
+      "answer_facts": [
+        "For chat or completion, mean embedding cosine drop must be 0.012 or less and the 99th percentile semantic delta must be 0.02 or less.",
+        "For code generation, pass@1 drop must be 1.5 percentage points or less and compilation failure delta must be 0.5 percentage points or less.",
+        "For embeddings, mean cosine similarity drop must be 0.015 or less and downstream retrieval MAP drop must be 0.8 percent or less.",
+        "For latency and cost, p50 latency must not increase by more than 8 percent for the target serving configuration and cost per unit must decrease by at least 12 percent.",
+        "Any breach of a primary threshold results in FAIL and the variant is blocked.",
+        "If primary thresholds pass but secondary or edge slice regressions exceed 95th percentile thresholds, the gate result is WARN for manual review and this often leads to a canary recommendation."
+      ],
+      "gold_doc_ids": [
+        "dsid_693c023c88264795a7e98c7737e6459e"
+      ],
+      "gold_uuids": [
+        "62316453-d68b-57a1-a0ae-1f6940c1b9e7"
+      ],
+      "retrieved_doc_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1",
+        "c4081ba2-bb14-5d56-aa58-3037ff60fe1e",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f"
+      ],
+      "retrieved_chunk_ids": [
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0013",
+        "024fea6a-d68a-57fb-ae2b-41826ad41dc1#0000",
+        "c4081ba2-bb14-5d56-aa58-3037ff60fe1e#0003",
+        "887ec1b2-2977-55ba-962f-bcad647fdb26#0000",
+        "2974e4dd-33c6-589b-a519-b39d78e6906f#0020"
+      ],
+      "retrieved_titles": [
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts",
+        "sales",
+        "POC Eval Artifacts & Decision Handoff \u2014 Vanguard Analytics",
+        "sales",
+        "ADR: Safe Apply Gating Signals for Optimization Config Rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 25
+  },
+  {
+    "test_id": "qst_0437:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0437:employee",
+      "question_id": "qst_0437",
+      "role": "employee",
+      "category": "completeness",
+      "expected_behavior": "partial",
+      "question": "Across all incident postmortems, which Redwood team was assigned the most follow-up action items?",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_15a9d93cc59c4241a97a7e72f749a216",
+        "dsid_0e0ac7276c864c63a02586fa07ae85e1",
+        "dsid_c0c93abadf4c438189e23cb45256c6e9",
+        "dsid_ac94dcaf2e1e4674b2351a8b4177db9e",
+        "dsid_98943148c00b42db859ec2d84649fe04",
+        "dsid_ed145ed8c9234a6681359188e2f43345",
+        "dsid_bd7caad8adb2405eaa7ad78c4ffb59d7",
+        "dsid_d373a0708d4144d684e495c52c16448a",
+        "dsid_ec406aef8d0342c78ae27025670daedf"
+      ],
+      "gold_uuids": [
+        "80061ffc-6180-5746-b9b6-d0d71db1853f",
+        "897157c4-c228-5023-9801-424b75f518ec",
+        "6c31a3d2-fe46-59e1-bcef-2587206d7de5",
+        "8e0ef8d1-f830-5f4f-b5c8-11cf9038ad68",
+        "e4c02433-f53f-5943-865b-89a02cfbb0a8",
+        "9dd3f9fd-52a0-5869-96c5-18cbc28eb515",
+        "29b896b2-5b7f-592d-82fc-e9797ab0ca2b",
+        "959da004-6c34-511e-a570-3edb668e75a9",
+        "90ca7b2b-9aac-57e8-b7fa-453b82f17e52"
+      ],
+      "retrieved_doc_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac"
+      ],
+      "retrieved_chunk_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2#0000",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af#0003",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854#0003",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f#0003",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0003"
+      ],
+      "retrieved_titles": [
+        "postmortems",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0437:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0437:sales_rep",
+      "question_id": "qst_0437",
+      "role": "sales_rep",
+      "category": "completeness",
+      "expected_behavior": "partial",
+      "question": "Across all incident postmortems, which Redwood team was assigned the most follow-up action items?",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_15a9d93cc59c4241a97a7e72f749a216",
+        "dsid_0e0ac7276c864c63a02586fa07ae85e1",
+        "dsid_c0c93abadf4c438189e23cb45256c6e9",
+        "dsid_ac94dcaf2e1e4674b2351a8b4177db9e",
+        "dsid_98943148c00b42db859ec2d84649fe04",
+        "dsid_ed145ed8c9234a6681359188e2f43345",
+        "dsid_bd7caad8adb2405eaa7ad78c4ffb59d7",
+        "dsid_d373a0708d4144d684e495c52c16448a",
+        "dsid_ec406aef8d0342c78ae27025670daedf"
+      ],
+      "gold_uuids": [
+        "80061ffc-6180-5746-b9b6-d0d71db1853f",
+        "897157c4-c228-5023-9801-424b75f518ec",
+        "6c31a3d2-fe46-59e1-bcef-2587206d7de5",
+        "8e0ef8d1-f830-5f4f-b5c8-11cf9038ad68",
+        "e4c02433-f53f-5943-865b-89a02cfbb0a8",
+        "9dd3f9fd-52a0-5869-96c5-18cbc28eb515",
+        "29b896b2-5b7f-592d-82fc-e9797ab0ca2b",
+        "959da004-6c34-511e-a570-3edb668e75a9",
+        "90ca7b2b-9aac-57e8-b7fa-453b82f17e52"
+      ],
+      "retrieved_doc_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac"
+      ],
+      "retrieved_chunk_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2#0000",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af#0003",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854#0003",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f#0003",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0003"
+      ],
+      "retrieved_titles": [
+        "postmortems",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0437:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0437:manager",
+      "question_id": "qst_0437",
+      "role": "manager",
+      "category": "completeness",
+      "expected_behavior": "partial",
+      "question": "Across all incident postmortems, which Redwood team was assigned the most follow-up action items?",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_15a9d93cc59c4241a97a7e72f749a216",
+        "dsid_0e0ac7276c864c63a02586fa07ae85e1",
+        "dsid_c0c93abadf4c438189e23cb45256c6e9",
+        "dsid_ac94dcaf2e1e4674b2351a8b4177db9e",
+        "dsid_98943148c00b42db859ec2d84649fe04",
+        "dsid_ed145ed8c9234a6681359188e2f43345",
+        "dsid_bd7caad8adb2405eaa7ad78c4ffb59d7",
+        "dsid_d373a0708d4144d684e495c52c16448a",
+        "dsid_ec406aef8d0342c78ae27025670daedf"
+      ],
+      "gold_uuids": [
+        "80061ffc-6180-5746-b9b6-d0d71db1853f",
+        "897157c4-c228-5023-9801-424b75f518ec",
+        "6c31a3d2-fe46-59e1-bcef-2587206d7de5",
+        "8e0ef8d1-f830-5f4f-b5c8-11cf9038ad68",
+        "e4c02433-f53f-5943-865b-89a02cfbb0a8",
+        "9dd3f9fd-52a0-5869-96c5-18cbc28eb515",
+        "29b896b2-5b7f-592d-82fc-e9797ab0ca2b",
+        "959da004-6c34-511e-a570-3edb668e75a9",
+        "90ca7b2b-9aac-57e8-b7fa-453b82f17e52"
+      ],
+      "retrieved_doc_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac"
+      ],
+      "retrieved_chunk_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2#0000",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af#0003",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854#0003",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f#0003",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0003"
+      ],
+      "retrieved_titles": [
+        "postmortems",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0437:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0437:executive",
+      "question_id": "qst_0437",
+      "role": "executive",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "Across all incident postmortems, which Redwood team was assigned the most follow-up action items?",
+      "answer_facts": [
+        "The Platform team was assigned the most follow-up action items across all incident postmortems.",
+        "The Platform team had 16 total follow-up action items assigned across all incident postmortems."
+      ],
+      "gold_doc_ids": [
+        "dsid_15a9d93cc59c4241a97a7e72f749a216",
+        "dsid_0e0ac7276c864c63a02586fa07ae85e1",
+        "dsid_c0c93abadf4c438189e23cb45256c6e9",
+        "dsid_ac94dcaf2e1e4674b2351a8b4177db9e",
+        "dsid_98943148c00b42db859ec2d84649fe04",
+        "dsid_ed145ed8c9234a6681359188e2f43345",
+        "dsid_bd7caad8adb2405eaa7ad78c4ffb59d7",
+        "dsid_d373a0708d4144d684e495c52c16448a",
+        "dsid_ec406aef8d0342c78ae27025670daedf"
+      ],
+      "gold_uuids": [
+        "80061ffc-6180-5746-b9b6-d0d71db1853f",
+        "897157c4-c228-5023-9801-424b75f518ec",
+        "6c31a3d2-fe46-59e1-bcef-2587206d7de5",
+        "8e0ef8d1-f830-5f4f-b5c8-11cf9038ad68",
+        "e4c02433-f53f-5943-865b-89a02cfbb0a8",
+        "9dd3f9fd-52a0-5869-96c5-18cbc28eb515",
+        "29b896b2-5b7f-592d-82fc-e9797ab0ca2b",
+        "959da004-6c34-511e-a570-3edb668e75a9",
+        "90ca7b2b-9aac-57e8-b7fa-453b82f17e52"
+      ],
+      "retrieved_doc_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac"
+      ],
+      "retrieved_chunk_ids": [
+        "61883ffd-0b8c-558f-aaa1-851a793b5ef2#0000",
+        "06e7679b-bc59-50d1-8d14-547ee01e58af#0003",
+        "d4e9d1fa-d418-52bf-9730-4272d56bf854#0003",
+        "566acf8d-ac0d-5030-a557-a8bc277bed9f#0003",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0003"
+      ],
+      "retrieved_titles": [
+        "postmortems",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0456:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0456:employee",
+      "question_id": "qst_0456",
+      "role": "employee",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "What time was the fantasy football mock draft scheduled for, and which time zone was it in?",
+      "answer_facts": [
+        "The fantasy football mock draft was scheduled for 8:00 PM.",
+        "The scheduled time was in Pacific Standard Time (PST)."
+      ],
+      "gold_doc_ids": [
+        "dsid_2d829921c58b4e3db4be1d60fc0ceb3a"
+      ],
+      "gold_uuids": [
+        "929b8145-ac0f-5bd1-bbd8-6b34bc52ee06"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0456:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0456:sales_rep",
+      "question_id": "qst_0456",
+      "role": "sales_rep",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "What time was the fantasy football mock draft scheduled for, and which time zone was it in?",
+      "answer_facts": [
+        "The fantasy football mock draft was scheduled for 8:00 PM.",
+        "The scheduled time was in Pacific Standard Time (PST)."
+      ],
+      "gold_doc_ids": [
+        "dsid_2d829921c58b4e3db4be1d60fc0ceb3a"
+      ],
+      "gold_uuids": [
+        "929b8145-ac0f-5bd1-bbd8-6b34bc52ee06"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0456:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0456:manager",
+      "question_id": "qst_0456",
+      "role": "manager",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "What time was the fantasy football mock draft scheduled for, and which time zone was it in?",
+      "answer_facts": [
+        "The fantasy football mock draft was scheduled for 8:00 PM.",
+        "The scheduled time was in Pacific Standard Time (PST)."
+      ],
+      "gold_doc_ids": [
+        "dsid_2d829921c58b4e3db4be1d60fc0ceb3a"
+      ],
+      "gold_uuids": [
+        "929b8145-ac0f-5bd1-bbd8-6b34bc52ee06"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0456:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0456:executive",
+      "question_id": "qst_0456",
+      "role": "executive",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "What time was the fantasy football mock draft scheduled for, and which time zone was it in?",
+      "answer_facts": [
+        "The fantasy football mock draft was scheduled for 8:00 PM.",
+        "The scheduled time was in Pacific Standard Time (PST)."
+      ],
+      "gold_doc_ids": [
+        "dsid_2d829921c58b4e3db4be1d60fc0ceb3a"
+      ],
+      "gold_uuids": [
+        "929b8145-ac0f-5bd1-bbd8-6b34bc52ee06"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0206:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0206:manager",
+      "question_id": "qst_0206",
+      "role": "manager",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the 2027 renewal email thread about moving a customer from four capacity bands to a two level reserved plus overflow setup, what p95 response time was promised for the reranking endpoint under the base reservation assumptions?",
+      "answer_facts": [
+        "The promised p95 response time for the candidate-rerank (reranking) endpoint under the 32-GPU Base reservation assumptions was less than or equal to 310 ms."
+      ],
+      "gold_doc_ids": [
+        "dsid_4842bf4dbbd84d60830cf3e9704fb203"
+      ],
+      "gold_uuids": [
+        "367ef0ff-1558-5c9c-bd21-328a2401185d"
+      ],
+      "retrieved_doc_ids": [
+        "0a1b20b3-1e42-5a00-8771-2ca5aaad7d7a",
+        "41701589-34d8-55b3-83e5-173338d2bba2",
+        "2aacf805-c112-5fe8-8502-8652926255c3",
+        "bf730dcf-3a24-51d2-a0b5-7343cfce09b4",
+        "edc8ccbe-14a4-5c7e-a259-de7a285aa88b"
+      ],
+      "retrieved_chunk_ids": [
+        "0a1b20b3-1e42-5a00-8771-2ca5aaad7d7a#0001",
+        "41701589-34d8-55b3-83e5-173338d2bba2#0006",
+        "2aacf805-c112-5fe8-8502-8652926255c3#0001",
+        "bf730dcf-3a24-51d2-a0b5-7343cfce09b4#0007",
+        "edc8ccbe-14a4-5c7e-a259-de7a285aa88b#0005"
+      ],
+      "retrieved_titles": [
+        "customer-success",
+        "RFP: Inference reservation worksheet & GPU/throughput clarifications",
+        "architecture",
+        "Dedicated reservation options: cluster sizing & ramp schedule",
+        "PoC economics & latency options \u2014 quant tiering + batch vs streaming follow-up"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0206:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0206:executive",
+      "question_id": "qst_0206",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the 2027 renewal email thread about moving a customer from four capacity bands to a two level reserved plus overflow setup, what p95 response time was promised for the reranking endpoint under the base reservation assumptions?",
+      "answer_facts": [
+        "The promised p95 response time for the candidate-rerank (reranking) endpoint under the 32-GPU Base reservation assumptions was less than or equal to 310 ms."
+      ],
+      "gold_doc_ids": [
+        "dsid_4842bf4dbbd84d60830cf3e9704fb203"
+      ],
+      "gold_uuids": [
+        "367ef0ff-1558-5c9c-bd21-328a2401185d"
+      ],
+      "retrieved_doc_ids": [
+        "09255e1f-0166-56fc-945a-0c06829b690e",
+        "0a1b20b3-1e42-5a00-8771-2ca5aaad7d7a",
+        "41701589-34d8-55b3-83e5-173338d2bba2",
+        "bf730dcf-3a24-51d2-a0b5-7343cfce09b4",
+        "edc8ccbe-14a4-5c7e-a259-de7a285aa88b"
+      ],
+      "retrieved_chunk_ids": [
+        "09255e1f-0166-56fc-945a-0c06829b690e#0001",
+        "0a1b20b3-1e42-5a00-8771-2ca5aaad7d7a#0001",
+        "41701589-34d8-55b3-83e5-173338d2bba2#0006",
+        "bf730dcf-3a24-51d2-a0b5-7343cfce09b4#0007",
+        "edc8ccbe-14a4-5c7e-a259-de7a285aa88b#0005"
+      ],
+      "retrieved_titles": [
+        "Renewal: priority response & support tier conversion request",
+        "customer-success",
+        "RFP: Inference reservation worksheet & GPU/throughput clarifications",
+        "Dedicated reservation options: cluster sizing & ramp schedule",
+        "PoC economics & latency options \u2014 quant tiering + batch vs streaming follow-up"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0007:employee",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 13 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0007:employee",
+      "question_id": "qst_0007",
+      "role": "employee",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "In a rolling investigation of a model regression on policy-related prompts after a recent deploy, what was the average triage rubric score change between the older baseline build and the newer optimized build in the first comparison run?",
+      "answer_facts": [
+        "In the first comparison run, the older baseline build averaged a triage rubric score of 2.7",
+        "In the first comparison run, the newer optimized build averaged a triage rubric score of 1.9",
+        "The average triage rubric score decreased by 0.8 points from the baseline build to the newer optimized build in the first comparison run"
+      ],
+      "gold_doc_ids": [
+        "dsid_72ec4a9962ba43e88acd61abbba1052d"
+      ],
+      "gold_uuids": [
+        "e3b3cccc-780e-542e-8ace-dae43e9700dd"
+      ],
+      "retrieved_doc_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a"
+      ],
+      "retrieved_chunk_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0000",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0001",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc#0000",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd#0003",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a#0000"
+      ],
+      "retrieved_titles": [
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "QualGuard: Explainable Embedding Change Investigator & Offline Quality Harness",
+        "eng-oncall",
+        "Align eval metrics and consensus judging for staged config/model rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 13
+  },
+  {
+    "test_id": "qst_0007:sales_rep",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 13 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0007:sales_rep",
+      "question_id": "qst_0007",
+      "role": "sales_rep",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "In a rolling investigation of a model regression on policy-related prompts after a recent deploy, what was the average triage rubric score change between the older baseline build and the newer optimized build in the first comparison run?",
+      "answer_facts": [
+        "In the first comparison run, the older baseline build averaged a triage rubric score of 2.7",
+        "In the first comparison run, the newer optimized build averaged a triage rubric score of 1.9",
+        "The average triage rubric score decreased by 0.8 points from the baseline build to the newer optimized build in the first comparison run"
+      ],
+      "gold_doc_ids": [
+        "dsid_72ec4a9962ba43e88acd61abbba1052d"
+      ],
+      "gold_uuids": [
+        "e3b3cccc-780e-542e-8ace-dae43e9700dd"
+      ],
+      "retrieved_doc_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a"
+      ],
+      "retrieved_chunk_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0000",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0001",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc#0000",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd#0003",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a#0000"
+      ],
+      "retrieved_titles": [
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "QualGuard: Explainable Embedding Change Investigator & Offline Quality Harness",
+        "eng-oncall",
+        "Align eval metrics and consensus judging for staged config/model rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 13
+  },
+  {
+    "test_id": "qst_0007:manager",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0007:manager",
+      "question_id": "qst_0007",
+      "role": "manager",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "In a rolling investigation of a model regression on policy-related prompts after a recent deploy, what was the average triage rubric score change between the older baseline build and the newer optimized build in the first comparison run?",
+      "answer_facts": [
+        "In the first comparison run, the older baseline build averaged a triage rubric score of 2.7",
+        "In the first comparison run, the newer optimized build averaged a triage rubric score of 1.9",
+        "The average triage rubric score decreased by 0.8 points from the baseline build to the newer optimized build in the first comparison run"
+      ],
+      "gold_doc_ids": [
+        "dsid_72ec4a9962ba43e88acd61abbba1052d"
+      ],
+      "gold_uuids": [
+        "e3b3cccc-780e-542e-8ace-dae43e9700dd"
+      ],
+      "retrieved_doc_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a"
+      ],
+      "retrieved_chunk_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0000",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0001",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc#0000",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd#0003",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a#0000"
+      ],
+      "retrieved_titles": [
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "QualGuard: Explainable Embedding Change Investigator & Offline Quality Harness",
+        "eng-oncall",
+        "Align eval metrics and consensus judging for staged config/model rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0007:executive",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0007:executive",
+      "question_id": "qst_0007",
+      "role": "executive",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "In a rolling investigation of a model regression on policy-related prompts after a recent deploy, what was the average triage rubric score change between the older baseline build and the newer optimized build in the first comparison run?",
+      "answer_facts": [
+        "In the first comparison run, the older baseline build averaged a triage rubric score of 2.7",
+        "In the first comparison run, the newer optimized build averaged a triage rubric score of 1.9",
+        "The average triage rubric score decreased by 0.8 points from the baseline build to the newer optimized build in the first comparison run"
+      ],
+      "gold_doc_ids": [
+        "dsid_72ec4a9962ba43e88acd61abbba1052d"
+      ],
+      "gold_uuids": [
+        "e3b3cccc-780e-542e-8ace-dae43e9700dd"
+      ],
+      "retrieved_doc_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a"
+      ],
+      "retrieved_chunk_ids": [
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0000",
+        "1a8d5270-0851-5e49-9cd7-13f5b6200280#0001",
+        "48d300d4-ac42-56ba-bfe4-74c3fc5bbcdc#0000",
+        "10e9e9cd-e737-5296-af4a-aecc13a20ecd#0003",
+        "ca35538f-1cda-5d45-addd-c6c63994d97a#0000"
+      ],
+      "retrieved_titles": [
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "Drift attribution probe and triage playbook: correlate eval regressions to infra, quantization, and prompt variants",
+        "QualGuard: Explainable Embedding Change Investigator & Offline Quality Harness",
+        "eng-oncall",
+        "Align eval metrics and consensus judging for staged config/model rollouts"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0454:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0454:employee",
+      "question_id": "qst_0454",
+      "role": "employee",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "When is the professional deep cleaning scheduled for the smelly refrigerator in the 4th floor office kitchen?",
+      "answer_facts": [
+        "Facilities has scheduled the vendor professional deep clean for the smelly refrigerator in the 4th floor office kitchen for 2025-06-14."
+      ],
+      "gold_doc_ids": [
+        "dsid_0fa69b4e576f417ab759af8e33cb049f"
+      ],
+      "gold_uuids": [
+        "605aa2f9-2da1-501d-a25b-431f05c40f23"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0454:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0454:sales_rep",
+      "question_id": "qst_0454",
+      "role": "sales_rep",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "When is the professional deep cleaning scheduled for the smelly refrigerator in the 4th floor office kitchen?",
+      "answer_facts": [
+        "Facilities has scheduled the vendor professional deep clean for the smelly refrigerator in the 4th floor office kitchen for 2025-06-14."
+      ],
+      "gold_doc_ids": [
+        "dsid_0fa69b4e576f417ab759af8e33cb049f"
+      ],
+      "gold_uuids": [
+        "605aa2f9-2da1-501d-a25b-431f05c40f23"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0454:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0454:manager",
+      "question_id": "qst_0454",
+      "role": "manager",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "When is the professional deep cleaning scheduled for the smelly refrigerator in the 4th floor office kitchen?",
+      "answer_facts": [
+        "Facilities has scheduled the vendor professional deep clean for the smelly refrigerator in the 4th floor office kitchen for 2025-06-14."
+      ],
+      "gold_doc_ids": [
+        "dsid_0fa69b4e576f417ab759af8e33cb049f"
+      ],
+      "gold_uuids": [
+        "605aa2f9-2da1-501d-a25b-431f05c40f23"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0454:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0454:executive",
+      "question_id": "qst_0454",
+      "role": "executive",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "When is the professional deep cleaning scheduled for the smelly refrigerator in the 4th floor office kitchen?",
+      "answer_facts": [
+        "Facilities has scheduled the vendor professional deep clean for the smelly refrigerator in the 4th floor office kitchen for 2025-06-14."
+      ],
+      "gold_doc_ids": [
+        "dsid_0fa69b4e576f417ab759af8e33cb049f"
+      ],
+      "gold_uuids": [
+        "605aa2f9-2da1-501d-a25b-431f05c40f23"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0288:executive",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 10 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0288:executive",
+      "question_id": "qst_0288",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the late Q3 email thread about rescuing a near-lost senior platform hire for a customer-facing performance pipeline, what one-time pay-range exception did People Ops approve (how far above the midpoint)?",
+      "answer_facts": [
+        "People Ops approved a one-time pay-range exception allowing up to 10% above the midpoint."
+      ],
+      "gold_doc_ids": [
+        "dsid_c2ddd5240eb04e16806d82103f7646dd"
+      ],
+      "gold_uuids": [
+        "2e6c30fd-518e-5320-a986-b5667db6f3d4"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 10
+  },
+  {
+    "test_id": "qst_0411:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0411:employee",
+      "question_id": "qst_0411",
+      "role": "employee",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "On Streamly AI's dedicated pool dp-132-usw, what % of interactive burst credits should be reserved exclusively for priority=high routes?",
+      "answer_facts": [
+        "The answer must state that the updated reservation target is 30% of interactive burst credits exclusively for priority=high routes on dp-132-usw.",
+        "The answer may mention that an earlier/internal suggestion was 20%, but it must clearly indicate 30% is the current/applied target.",
+        "The answer must not claim the reservation target is 20% as the final/current value.",
+        "The answer must not introduce other percentages (e.g., 25%, 40%) not supported by the documents.",
+        "The answer must not attribute the burst reservation change to a different pool or region; it is for dp-132-usw (us-west)."
+      ],
+      "gold_doc_ids": [
+        "dsid_5f3a672da4974781a5577b0f3d4993e9",
+        "dsid_8ffbd9fe82df457ca67d4fbc9ff1090c"
+      ],
+      "gold_uuids": [
+        "2e8fd6f9-1525-54bc-a794-d2b9a5aeb21b",
+        "87f0429e-d76e-5f13-b0bc-e186934260de"
+      ],
+      "retrieved_doc_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03",
+        "575b353f-5491-59e2-8927-e23a2fda2823",
+        "5adee868-8079-5a62-982e-4798f415801d",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44",
+        "183e19db-9b51-5755-a6b1-f3e193e84bfb"
+      ],
+      "retrieved_chunk_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03#0000",
+        "575b353f-5491-59e2-8927-e23a2fda2823#0000",
+        "5adee868-8079-5a62-982e-4798f415801d#0002",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44#0000",
+        "183e19db-9b51-5755-a6b1-f3e193e84bfb#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "sales",
+        "support",
+        "product",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0411:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0411:sales_rep",
+      "question_id": "qst_0411",
+      "role": "sales_rep",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "On Streamly AI's dedicated pool dp-132-usw, what % of interactive burst credits should be reserved exclusively for priority=high routes?",
+      "answer_facts": [
+        "The answer must state that the updated reservation target is 30% of interactive burst credits exclusively for priority=high routes on dp-132-usw.",
+        "The answer may mention that an earlier/internal suggestion was 20%, but it must clearly indicate 30% is the current/applied target.",
+        "The answer must not claim the reservation target is 20% as the final/current value.",
+        "The answer must not introduce other percentages (e.g., 25%, 40%) not supported by the documents.",
+        "The answer must not attribute the burst reservation change to a different pool or region; it is for dp-132-usw (us-west)."
+      ],
+      "gold_doc_ids": [
+        "dsid_5f3a672da4974781a5577b0f3d4993e9",
+        "dsid_8ffbd9fe82df457ca67d4fbc9ff1090c"
+      ],
+      "gold_uuids": [
+        "2e8fd6f9-1525-54bc-a794-d2b9a5aeb21b",
+        "87f0429e-d76e-5f13-b0bc-e186934260de"
+      ],
+      "retrieved_doc_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03",
+        "575b353f-5491-59e2-8927-e23a2fda2823",
+        "5adee868-8079-5a62-982e-4798f415801d",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44",
+        "183e19db-9b51-5755-a6b1-f3e193e84bfb"
+      ],
+      "retrieved_chunk_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03#0000",
+        "575b353f-5491-59e2-8927-e23a2fda2823#0000",
+        "5adee868-8079-5a62-982e-4798f415801d#0002",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44#0000",
+        "183e19db-9b51-5755-a6b1-f3e193e84bfb#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "sales",
+        "support",
+        "product",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0411:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0411:manager",
+      "question_id": "qst_0411",
+      "role": "manager",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "On Streamly AI's dedicated pool dp-132-usw, what % of interactive burst credits should be reserved exclusively for priority=high routes?",
+      "answer_facts": [
+        "The answer must state that the updated reservation target is 30% of interactive burst credits exclusively for priority=high routes on dp-132-usw.",
+        "The answer may mention that an earlier/internal suggestion was 20%, but it must clearly indicate 30% is the current/applied target.",
+        "The answer must not claim the reservation target is 20% as the final/current value.",
+        "The answer must not introduce other percentages (e.g., 25%, 40%) not supported by the documents.",
+        "The answer must not attribute the burst reservation change to a different pool or region; it is for dp-132-usw (us-west)."
+      ],
+      "gold_doc_ids": [
+        "dsid_5f3a672da4974781a5577b0f3d4993e9",
+        "dsid_8ffbd9fe82df457ca67d4fbc9ff1090c"
+      ],
+      "gold_uuids": [
+        "2e8fd6f9-1525-54bc-a794-d2b9a5aeb21b",
+        "87f0429e-d76e-5f13-b0bc-e186934260de"
+      ],
+      "retrieved_doc_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03",
+        "575b353f-5491-59e2-8927-e23a2fda2823",
+        "e4d7a7a0-65d5-5378-9bfb-cf7f70d3b044",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f"
+      ],
+      "retrieved_chunk_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03#0000",
+        "575b353f-5491-59e2-8927-e23a2fda2823#0000",
+        "e4d7a7a0-65d5-5378-9bfb-cf7f70d3b044#0000",
+        "0eec91a3-4718-599c-bd9b-5ba237b44b44#0000",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0006"
+      ],
+      "retrieved_titles": [
+        "support",
+        "sales",
+        "product",
+        "product",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0411:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0411:executive",
+      "question_id": "qst_0411",
+      "role": "executive",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "On Streamly AI's dedicated pool dp-132-usw, what % of interactive burst credits should be reserved exclusively for priority=high routes?",
+      "answer_facts": [
+        "The answer must state that the updated reservation target is 30% of interactive burst credits exclusively for priority=high routes on dp-132-usw.",
+        "The answer may mention that an earlier/internal suggestion was 20%, but it must clearly indicate 30% is the current/applied target.",
+        "The answer must not claim the reservation target is 20% as the final/current value.",
+        "The answer must not introduce other percentages (e.g., 25%, 40%) not supported by the documents.",
+        "The answer must not attribute the burst reservation change to a different pool or region; it is for dp-132-usw (us-west)."
+      ],
+      "gold_doc_ids": [
+        "dsid_5f3a672da4974781a5577b0f3d4993e9",
+        "dsid_8ffbd9fe82df457ca67d4fbc9ff1090c"
+      ],
+      "gold_uuids": [
+        "2e8fd6f9-1525-54bc-a794-d2b9a5aeb21b",
+        "87f0429e-d76e-5f13-b0bc-e186934260de"
+      ],
+      "retrieved_doc_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03",
+        "575b353f-5491-59e2-8927-e23a2fda2823",
+        "59baf384-c99c-5c91-be97-5e291719456f",
+        "e4d7a7a0-65d5-5378-9bfb-cf7f70d3b044",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f"
+      ],
+      "retrieved_chunk_ids": [
+        "1d83aa39-2bbf-5ba2-9c34-0a49f3d48b03#0000",
+        "575b353f-5491-59e2-8927-e23a2fda2823#0000",
+        "59baf384-c99c-5c91-be97-5e291719456f#0000",
+        "e4d7a7a0-65d5-5378-9bfb-cf7f70d3b044#0000",
+        "574cda18-2c8f-5760-9cb8-4e1787af822f#0006"
+      ],
+      "retrieved_titles": [
+        "support",
+        "sales",
+        "product",
+        "product",
+        "Caraway Health \u2014 hosted API traffic sketch, budget band, and peak TPS (post-demo)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0404:employee",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 16 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0404:employee",
+      "question_id": "qst_0404",
+      "role": "employee",
+      "category": "constrained",
+      "expected_behavior": "answer",
+      "question": "We saw quality regressions after enabling an INT8/mixed-precision variant and suspect KV-cache rounding on long-context requests. What request header can we set as a quick mitigation to bypass the KV cache, and in the dynamic quant handoff policy for the interactive-chat route what minimum KV-cache hit-rate and max sequence length are required before routing to a quant variant?",
+      "answer_facts": [
+        "Setting the request header X-RW-Cache-Mode: bypass bypasses the KV cache.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires a KV-cache hit-rate of at least 60%.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires the request sequence length to be at most 2048 tokens.",
+        "The answer must not use a different cache-bypass header name (e.g., anything other than X-RW-Cache-Mode: bypass).",
+        "The answer must not claim the interactive-chat route's minimum KV-cache hit-rate is 30% or 0% (those appear for other routes in the routing matrix).",
+        "The answer must not claim the interactive-chat route's max sequence length for quant routing is 8192 or 1024 (those limits belong to other routes in the routing matrix).",
+        "The answer must not substitute general quantization rollback/eval thresholds (RSI, fidelity deltas, etc.) in place of the routing requirements requested."
+      ],
+      "gold_doc_ids": [
+        "dsid_ad70fa7335294e2988193e2a6645a5ba",
+        "dsid_8f0301d7b2414031b392da5566f98ce6"
+      ],
+      "gold_uuids": [
+        "54918ad4-5509-5182-bdeb-08984a7fb058",
+        "7aaa00e9-f853-510b-b657-9cbc6d6cedb6"
+      ],
+      "retrieved_doc_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "03b0a27e-8a27-555e-9232-949619d35c16",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa"
+      ],
+      "retrieved_chunk_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0001",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0003",
+        "03b0a27e-8a27-555e-9232-949619d35c16#0000",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0004",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003"
+      ],
+      "retrieved_titles": [
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "all-hands",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "Route-aware quantization & batching + perishable-cache presets (draft)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 16
+  },
+  {
+    "test_id": "qst_0404:sales_rep",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 16 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0404:sales_rep",
+      "question_id": "qst_0404",
+      "role": "sales_rep",
+      "category": "constrained",
+      "expected_behavior": "answer",
+      "question": "We saw quality regressions after enabling an INT8/mixed-precision variant and suspect KV-cache rounding on long-context requests. What request header can we set as a quick mitigation to bypass the KV cache, and in the dynamic quant handoff policy for the interactive-chat route what minimum KV-cache hit-rate and max sequence length are required before routing to a quant variant?",
+      "answer_facts": [
+        "Setting the request header X-RW-Cache-Mode: bypass bypasses the KV cache.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires a KV-cache hit-rate of at least 60%.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires the request sequence length to be at most 2048 tokens.",
+        "The answer must not use a different cache-bypass header name (e.g., anything other than X-RW-Cache-Mode: bypass).",
+        "The answer must not claim the interactive-chat route's minimum KV-cache hit-rate is 30% or 0% (those appear for other routes in the routing matrix).",
+        "The answer must not claim the interactive-chat route's max sequence length for quant routing is 8192 or 1024 (those limits belong to other routes in the routing matrix).",
+        "The answer must not substitute general quantization rollback/eval thresholds (RSI, fidelity deltas, etc.) in place of the routing requirements requested."
+      ],
+      "gold_doc_ids": [
+        "dsid_ad70fa7335294e2988193e2a6645a5ba",
+        "dsid_8f0301d7b2414031b392da5566f98ce6"
+      ],
+      "gold_uuids": [
+        "54918ad4-5509-5182-bdeb-08984a7fb058",
+        "7aaa00e9-f853-510b-b657-9cbc6d6cedb6"
+      ],
+      "retrieved_doc_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "03b0a27e-8a27-555e-9232-949619d35c16",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa"
+      ],
+      "retrieved_chunk_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0001",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0003",
+        "03b0a27e-8a27-555e-9232-949619d35c16#0000",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0004",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003"
+      ],
+      "retrieved_titles": [
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "all-hands",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "Route-aware quantization & batching + perishable-cache presets (draft)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 16
+  },
+  {
+    "test_id": "qst_0404:manager",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 19 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0404:manager",
+      "question_id": "qst_0404",
+      "role": "manager",
+      "category": "constrained",
+      "expected_behavior": "answer",
+      "question": "We saw quality regressions after enabling an INT8/mixed-precision variant and suspect KV-cache rounding on long-context requests. What request header can we set as a quick mitigation to bypass the KV cache, and in the dynamic quant handoff policy for the interactive-chat route what minimum KV-cache hit-rate and max sequence length are required before routing to a quant variant?",
+      "answer_facts": [
+        "Setting the request header X-RW-Cache-Mode: bypass bypasses the KV cache.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires a KV-cache hit-rate of at least 60%.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires the request sequence length to be at most 2048 tokens.",
+        "The answer must not use a different cache-bypass header name (e.g., anything other than X-RW-Cache-Mode: bypass).",
+        "The answer must not claim the interactive-chat route's minimum KV-cache hit-rate is 30% or 0% (those appear for other routes in the routing matrix).",
+        "The answer must not claim the interactive-chat route's max sequence length for quant routing is 8192 or 1024 (those limits belong to other routes in the routing matrix).",
+        "The answer must not substitute general quantization rollback/eval thresholds (RSI, fidelity deltas, etc.) in place of the routing requirements requested."
+      ],
+      "gold_doc_ids": [
+        "dsid_ad70fa7335294e2988193e2a6645a5ba",
+        "dsid_8f0301d7b2414031b392da5566f98ce6"
+      ],
+      "gold_uuids": [
+        "54918ad4-5509-5182-bdeb-08984a7fb058",
+        "7aaa00e9-f853-510b-b657-9cbc6d6cedb6"
+      ],
+      "retrieved_doc_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "1f4545b9-f3ed-5206-943b-640fefff1cc2",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa"
+      ],
+      "retrieved_chunk_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0001",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0003",
+        "1f4545b9-f3ed-5206-943b-640fefff1cc2#0001",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0004",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003"
+      ],
+      "retrieved_titles": [
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "eng-ml",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "Route-aware quantization & batching + perishable-cache presets (draft)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 19
+  },
+  {
+    "test_id": "qst_0404:executive",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 19 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0404:executive",
+      "question_id": "qst_0404",
+      "role": "executive",
+      "category": "constrained",
+      "expected_behavior": "answer",
+      "question": "We saw quality regressions after enabling an INT8/mixed-precision variant and suspect KV-cache rounding on long-context requests. What request header can we set as a quick mitigation to bypass the KV cache, and in the dynamic quant handoff policy for the interactive-chat route what minimum KV-cache hit-rate and max sequence length are required before routing to a quant variant?",
+      "answer_facts": [
+        "Setting the request header X-RW-Cache-Mode: bypass bypasses the KV cache.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires a KV-cache hit-rate of at least 60%.",
+        "For the interactive-chat dynamic quant handoff policy, routing to a quant variant requires the request sequence length to be at most 2048 tokens.",
+        "The answer must not use a different cache-bypass header name (e.g., anything other than X-RW-Cache-Mode: bypass).",
+        "The answer must not claim the interactive-chat route's minimum KV-cache hit-rate is 30% or 0% (those appear for other routes in the routing matrix).",
+        "The answer must not claim the interactive-chat route's max sequence length for quant routing is 8192 or 1024 (those limits belong to other routes in the routing matrix).",
+        "The answer must not substitute general quantization rollback/eval thresholds (RSI, fidelity deltas, etc.) in place of the routing requirements requested."
+      ],
+      "gold_doc_ids": [
+        "dsid_ad70fa7335294e2988193e2a6645a5ba",
+        "dsid_8f0301d7b2414031b392da5566f98ce6"
+      ],
+      "gold_uuids": [
+        "54918ad4-5509-5182-bdeb-08984a7fb058",
+        "7aaa00e9-f853-510b-b657-9cbc6d6cedb6"
+      ],
+      "retrieved_doc_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118",
+        "1f4545b9-f3ed-5206-943b-640fefff1cc2",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa"
+      ],
+      "retrieved_chunk_ids": [
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0001",
+        "d615d117-8d2d-5837-ae9f-856d38f0c118#0003",
+        "1f4545b9-f3ed-5206-943b-640fefff1cc2#0001",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0004",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003"
+      ],
+      "retrieved_titles": [
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "KV cache calibration: holistic FP8/INT8 latency vs quality trade-off experiments",
+        "eng-ml",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "Route-aware quantization & batching + perishable-cache presets (draft)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 19
+  },
+  {
+    "test_id": "qst_0248:executive",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 8 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0248:executive",
+      "question_id": "qst_0248",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In our hiring workflow, what happens when a candidate is strong but the pay we want to offer is about 20 percent above the middle of the internal range, specifically who has to approve it?",
+      "answer_facts": [
+        "An offer about 20 percent above the band midpoint falls into the plus 10 percent to plus 25 percent range.",
+        "An offer in the plus 10 percent to plus 25 percent range requires sign-off from the Hiring Manager and the HR Business Partner (HRBP)."
+      ],
+      "gold_doc_ids": [
+        "dsid_0a2cd37d53ff47d4aced289cd9a76fe8"
+      ],
+      "gold_uuids": [
+        "f3877fd0-684b-51ca-9798-b2a3338545b6"
+      ],
+      "retrieved_doc_ids": [
+        "979c7f03-e6af-5e71-b84f-a7198f6c537b",
+        "8b8218c1-b00f-5349-b2e6-a00434b671ce",
+        "979c7f03-e6af-5e71-b84f-a7198f6c537b",
+        "7277c57c-57ff-5d8e-9db2-c03a4e595a6d",
+        "7277c57c-57ff-5d8e-9db2-c03a4e595a6d"
+      ],
+      "retrieved_chunk_ids": [
+        "979c7f03-e6af-5e71-b84f-a7198f6c537b#0000",
+        "8b8218c1-b00f-5349-b2e6-a00434b671ce#0000",
+        "979c7f03-e6af-5e71-b84f-a7198f6c537b#0001",
+        "7277c57c-57ff-5d8e-9db2-c03a4e595a6d#0003",
+        "7277c57c-57ff-5d8e-9db2-c03a4e595a6d#0000"
+      ],
+      "retrieved_titles": [
+        "people-ops",
+        "people-ops",
+        "people-ops",
+        "Compensation range synthesis & local-market localization playbook",
+        "Compensation range synthesis & local-market localization playbook"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 8
+  },
+  {
+    "test_id": "qst_0450:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0450:manager",
+      "question_id": "qst_0450",
+      "role": "manager",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many Fireflies sales-call transcripts mention a customer requirement for data residency (keeping data in a specific region/country)?",
+      "answer_facts": [
+        "8 Fireflies sales-call transcripts mention a customer requirement for data residency (keeping data in a specific region or country)."
+      ],
+      "gold_doc_ids": [
+        "dsid_c875ada2f9164277aa9500daa4753c68",
+        "dsid_3fa62946c32f47a489cf4aa2c4fc578b",
+        "dsid_51bac931bc704d7cb04438c33a2938da",
+        "dsid_85045318e1fd484b8a6ad5d724dd6e7c",
+        "dsid_5013219e53bb483cb9244fc16828d88c",
+        "dsid_7203cedfce0f4a149573d79592022d9f",
+        "dsid_3c9fe2220c204f13b878bd7d3a168f91",
+        "dsid_c637bbc9afd344e6aebde62826284a06"
+      ],
+      "gold_uuids": [
+        "8d32ab59-2da3-58fb-8817-1e51a1870a65",
+        "46b2ef88-b7c5-5be5-8c3f-763b61c0ce95",
+        "7ef46fb2-5575-592c-bf16-d0c6fa10d134",
+        "11556398-493d-5319-aa0b-4b145b8a741c",
+        "d65a3c7d-bbbf-5527-a437-7eec529305f5",
+        "c5301eb4-7018-57a6-8247-053eadc7cfb3",
+        "8037a158-844e-5f3c-baa3-264720e23710",
+        "9bdc63e1-5ae1-5d9b-a2ec-76cfe23e96b9"
+      ],
+      "retrieved_doc_ids": [
+        "0c5122bf-9a28-5d2b-bab4-564ab074c0d5",
+        "50737d6e-01cf-5f1d-8fb7-4e7d4ff07b64",
+        "abca0453-d3c8-527f-884f-7e0bdf13c729",
+        "6e15f79d-2845-5e93-bc2e-39548dffd491",
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762"
+      ],
+      "retrieved_chunk_ids": [
+        "0c5122bf-9a28-5d2b-bab4-564ab074c0d5#0000",
+        "50737d6e-01cf-5f1d-8fb7-4e7d4ff07b64#0000",
+        "abca0453-d3c8-527f-884f-7e0bdf13c729#0000",
+        "6e15f79d-2845-5e93-bc2e-39548dffd491#0000",
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762#0003"
+      ],
+      "retrieved_titles": [
+        "sales",
+        "people-ops",
+        "customer-success",
+        "sales",
+        "sales"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0450:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0450:executive",
+      "question_id": "qst_0450",
+      "role": "executive",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many Fireflies sales-call transcripts mention a customer requirement for data residency (keeping data in a specific region/country)?",
+      "answer_facts": [
+        "8 Fireflies sales-call transcripts mention a customer requirement for data residency (keeping data in a specific region or country)."
+      ],
+      "gold_doc_ids": [
+        "dsid_c875ada2f9164277aa9500daa4753c68",
+        "dsid_3fa62946c32f47a489cf4aa2c4fc578b",
+        "dsid_51bac931bc704d7cb04438c33a2938da",
+        "dsid_85045318e1fd484b8a6ad5d724dd6e7c",
+        "dsid_5013219e53bb483cb9244fc16828d88c",
+        "dsid_7203cedfce0f4a149573d79592022d9f",
+        "dsid_3c9fe2220c204f13b878bd7d3a168f91",
+        "dsid_c637bbc9afd344e6aebde62826284a06"
+      ],
+      "gold_uuids": [
+        "8d32ab59-2da3-58fb-8817-1e51a1870a65",
+        "46b2ef88-b7c5-5be5-8c3f-763b61c0ce95",
+        "7ef46fb2-5575-592c-bf16-d0c6fa10d134",
+        "11556398-493d-5319-aa0b-4b145b8a741c",
+        "d65a3c7d-bbbf-5527-a437-7eec529305f5",
+        "c5301eb4-7018-57a6-8247-053eadc7cfb3",
+        "8037a158-844e-5f3c-baa3-264720e23710",
+        "9bdc63e1-5ae1-5d9b-a2ec-76cfe23e96b9"
+      ],
+      "retrieved_doc_ids": [
+        "0c5122bf-9a28-5d2b-bab4-564ab074c0d5",
+        "50737d6e-01cf-5f1d-8fb7-4e7d4ff07b64",
+        "abca0453-d3c8-527f-884f-7e0bdf13c729",
+        "6e15f79d-2845-5e93-bc2e-39548dffd491",
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762"
+      ],
+      "retrieved_chunk_ids": [
+        "0c5122bf-9a28-5d2b-bab4-564ab074c0d5#0000",
+        "50737d6e-01cf-5f1d-8fb7-4e7d4ff07b64#0000",
+        "abca0453-d3c8-527f-884f-7e0bdf13c729#0000",
+        "6e15f79d-2845-5e93-bc2e-39548dffd491#0000",
+        "d87f9a7b-b9d7-5039-a552-0600e57c7762#0003"
+      ],
+      "retrieved_titles": [
+        "sales",
+        "people-ops",
+        "customer-success",
+        "sales",
+        "sales"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0414:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0414:employee",
+      "question_id": "qst_0414",
+      "role": "employee",
+      "category": "conflicting_info",
+      "expected_behavior": "partial",
+      "question": "INC-9821: was the degraded GPU node an OOM or intermittent driver/kernel launch stalls?",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_5611f05242ae4e6b9ae68d3c3e91bd54",
+        "dsid_0c1f1c83e8d44d2fa3a9f6c7b2d7b9f1"
+      ],
+      "gold_uuids": [
+        "74e67ad1-f3f3-5719-afe8-88eed9b5c945",
+        "860afb59-8f6b-53a4-8db0-2bf6fc157cd4"
+      ],
+      "retrieved_doc_ids": [
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "6d44b355-04d9-50dd-9e9c-489f2c5da745",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2",
+        "e6d286f6-a7ae-58c1-9588-1c331bc964da"
+      ],
+      "retrieved_chunk_ids": [
+        "f6883031-7424-5955-baab-0d54d2da1597#0000",
+        "f6883031-7424-5955-baab-0d54d2da1597#0003",
+        "6d44b355-04d9-50dd-9e9c-489f2c5da745#0000",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2#0004",
+        "e6d286f6-a7ae-58c1-9588-1c331bc964da#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "eng-oncall",
+        "support",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0414:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0414:sales_rep",
+      "question_id": "qst_0414",
+      "role": "sales_rep",
+      "category": "conflicting_info",
+      "expected_behavior": "partial",
+      "question": "INC-9821: was the degraded GPU node an OOM or intermittent driver/kernel launch stalls?",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_5611f05242ae4e6b9ae68d3c3e91bd54",
+        "dsid_0c1f1c83e8d44d2fa3a9f6c7b2d7b9f1"
+      ],
+      "gold_uuids": [
+        "74e67ad1-f3f3-5719-afe8-88eed9b5c945",
+        "860afb59-8f6b-53a4-8db0-2bf6fc157cd4"
+      ],
+      "retrieved_doc_ids": [
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "6d44b355-04d9-50dd-9e9c-489f2c5da745",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2",
+        "e6d286f6-a7ae-58c1-9588-1c331bc964da"
+      ],
+      "retrieved_chunk_ids": [
+        "f6883031-7424-5955-baab-0d54d2da1597#0000",
+        "f6883031-7424-5955-baab-0d54d2da1597#0003",
+        "6d44b355-04d9-50dd-9e9c-489f2c5da745#0000",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2#0004",
+        "e6d286f6-a7ae-58c1-9588-1c331bc964da#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "eng-oncall",
+        "support",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0414:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0414:manager",
+      "question_id": "qst_0414",
+      "role": "manager",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "INC-9821: was the degraded GPU node an OOM or intermittent driver/kernel launch stalls?",
+      "answer_facts": [
+        "The answer must state that the later correction identified intermittent driver/kernel launch stalls on the GPU node as the primary issue.",
+        "The answer must explicitly state there was no sustained GPU OOM (i.e., it was not primarily an OOM).",
+        "The answer must indicate that earlier reporting/hypotheses mentioned OOM and/or a kernel failure/degraded kernel, and that this was later corrected.",
+        "The answer must not claim the incident was caused by data exfiltration or a security breach (docs state no evidence of data integrity or security issues).",
+        "The answer must not introduce a different root cause unrelated to autoscaler behavior + a degraded node (e.g., 'database outage', 'network misconfiguration')."
+      ],
+      "gold_doc_ids": [
+        "dsid_5611f05242ae4e6b9ae68d3c3e91bd54",
+        "dsid_0c1f1c83e8d44d2fa3a9f6c7b2d7b9f1"
+      ],
+      "gold_uuids": [
+        "74e67ad1-f3f3-5719-afe8-88eed9b5c945",
+        "860afb59-8f6b-53a4-8db0-2bf6fc157cd4"
+      ],
+      "retrieved_doc_ids": [
+        "deed9723-dda4-56df-9834-b0e2c2cfb5c6",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4",
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2"
+      ],
+      "retrieved_chunk_ids": [
+        "deed9723-dda4-56df-9834-b0e2c2cfb5c6#0000",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4#0002",
+        "f6883031-7424-5955-baab-0d54d2da1597#0000",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4#0003",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2#0004"
+      ],
+      "retrieved_titles": [
+        "eng-ml",
+        "incidents",
+        "incidents",
+        "incidents",
+        "support"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0414:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0414:executive",
+      "question_id": "qst_0414",
+      "role": "executive",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "INC-9821: was the degraded GPU node an OOM or intermittent driver/kernel launch stalls?",
+      "answer_facts": [
+        "The answer must state that the later correction identified intermittent driver/kernel launch stalls on the GPU node as the primary issue.",
+        "The answer must explicitly state there was no sustained GPU OOM (i.e., it was not primarily an OOM).",
+        "The answer must indicate that earlier reporting/hypotheses mentioned OOM and/or a kernel failure/degraded kernel, and that this was later corrected.",
+        "The answer must not claim the incident was caused by data exfiltration or a security breach (docs state no evidence of data integrity or security issues).",
+        "The answer must not introduce a different root cause unrelated to autoscaler behavior + a degraded node (e.g., 'database outage', 'network misconfiguration')."
+      ],
+      "gold_doc_ids": [
+        "dsid_5611f05242ae4e6b9ae68d3c3e91bd54",
+        "dsid_0c1f1c83e8d44d2fa3a9f6c7b2d7b9f1"
+      ],
+      "gold_uuids": [
+        "74e67ad1-f3f3-5719-afe8-88eed9b5c945",
+        "860afb59-8f6b-53a4-8db0-2bf6fc157cd4"
+      ],
+      "retrieved_doc_ids": [
+        "deed9723-dda4-56df-9834-b0e2c2cfb5c6",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4",
+        "f6883031-7424-5955-baab-0d54d2da1597",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2"
+      ],
+      "retrieved_chunk_ids": [
+        "deed9723-dda4-56df-9834-b0e2c2cfb5c6#0000",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4#0002",
+        "f6883031-7424-5955-baab-0d54d2da1597#0000",
+        "94ff1671-4d84-536e-bc40-22b23b6214d4#0003",
+        "06eb4e61-242d-5721-9818-6ef6d6c42fe2#0004"
+      ],
+      "retrieved_titles": [
+        "eng-ml",
+        "incidents",
+        "incidents",
+        "incidents",
+        "support"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0452:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0452:employee",
+      "question_id": "qst_0452",
+      "role": "employee",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "Who owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call?",
+      "answer_facts": [
+        "Priya Nair owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call."
+      ],
+      "gold_doc_ids": [
+        "dsid_6279854275e44cce9115af8286fdf38b"
+      ],
+      "gold_uuids": [
+        "c82d3a80-9b65-5d26-96fe-f6aefabfee25"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0452:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0452:sales_rep",
+      "question_id": "qst_0452",
+      "role": "sales_rep",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "Who owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call?",
+      "answer_facts": [
+        "Priya Nair owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call."
+      ],
+      "gold_doc_ids": [
+        "dsid_6279854275e44cce9115af8286fdf38b"
+      ],
+      "gold_uuids": [
+        "c82d3a80-9b65-5d26-96fe-f6aefabfee25"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0452:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0452:manager",
+      "question_id": "qst_0452",
+      "role": "manager",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "Who owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call?",
+      "answer_facts": [
+        "Priya Nair owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call."
+      ],
+      "gold_doc_ids": [
+        "dsid_6279854275e44cce9115af8286fdf38b"
+      ],
+      "gold_uuids": [
+        "c82d3a80-9b65-5d26-96fe-f6aefabfee25"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0452:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0452:executive",
+      "question_id": "qst_0452",
+      "role": "executive",
+      "category": "miscellaneous",
+      "expected_behavior": "answer",
+      "question": "Who owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call?",
+      "answer_facts": [
+        "Priya Nair owns the messy go-to-market misc assets dump with placeholder marketing files and micro-copy ideas created during a last-minute scramble before a partner call."
+      ],
+      "gold_doc_ids": [
+        "dsid_6279854275e44cce9115af8286fdf38b"
+      ],
+      "gold_uuids": [
+        "c82d3a80-9b65-5d26-96fe-f6aefabfee25"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0186:employee",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 8 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0186:employee",
+      "question_id": "qst_0186",
+      "role": "employee",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the notes about keeping long, stop-and-go chat sessions cheap without replaying the whole history, what storage setup and time-to-live were proposed for keeping the compact per-session state for recent sessions versus longer retention?",
+      "answer_facts": [
+        "Hot, recent per-session anchors are kept in a per-customer LRU store in Redis.",
+        "Longer-term per-session anchors are stored in S3 with a 30-day TTL."
+      ],
+      "gold_doc_ids": [
+        "dsid_0ae9b752fef446ec86e376e2dea49c28"
+      ],
+      "gold_uuids": [
+        "e48cf84e-4172-522d-bd63-a63f9cdf00c2"
+      ],
+      "retrieved_doc_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c",
+        "1a25c3c9-a5fb-538e-8e25-bf77bd5b45ef"
+      ],
+      "retrieved_chunk_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f#0000",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa#0000",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c#0001",
+        "1a25c3c9-a5fb-538e-8e25-bf77bd5b45ef#0001"
+      ],
+      "retrieved_titles": [
+        "Session Spline \u2014 UX sprint notes and rough PRD",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "eng-platform",
+        "eng-platform",
+        "eng-platform"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 8
+  },
+  {
+    "test_id": "qst_0186:sales_rep",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 8 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0186:sales_rep",
+      "question_id": "qst_0186",
+      "role": "sales_rep",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the notes about keeping long, stop-and-go chat sessions cheap without replaying the whole history, what storage setup and time-to-live were proposed for keeping the compact per-session state for recent sessions versus longer retention?",
+      "answer_facts": [
+        "Hot, recent per-session anchors are kept in a per-customer LRU store in Redis.",
+        "Longer-term per-session anchors are stored in S3 with a 30-day TTL."
+      ],
+      "gold_doc_ids": [
+        "dsid_0ae9b752fef446ec86e376e2dea49c28"
+      ],
+      "gold_uuids": [
+        "e48cf84e-4172-522d-bd63-a63f9cdf00c2"
+      ],
+      "retrieved_doc_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c",
+        "1a25c3c9-a5fb-538e-8e25-bf77bd5b45ef"
+      ],
+      "retrieved_chunk_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f#0000",
+        "bed2a3c4-1aeb-50e8-b9c8-5810fec652aa#0003",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa#0000",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c#0001",
+        "1a25c3c9-a5fb-538e-8e25-bf77bd5b45ef#0001"
+      ],
+      "retrieved_titles": [
+        "Session Spline \u2014 UX sprint notes and rough PRD",
+        "Route-aware quantization & batching + perishable-cache presets (draft)",
+        "eng-platform",
+        "eng-platform",
+        "eng-platform"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 8
+  },
+  {
+    "test_id": "qst_0186:manager",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0186:manager",
+      "question_id": "qst_0186",
+      "role": "manager",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the notes about keeping long, stop-and-go chat sessions cheap without replaying the whole history, what storage setup and time-to-live were proposed for keeping the compact per-session state for recent sessions versus longer retention?",
+      "answer_facts": [
+        "Hot, recent per-session anchors are kept in a per-customer LRU store in Redis.",
+        "Longer-term per-session anchors are stored in S3 with a 30-day TTL."
+      ],
+      "gold_doc_ids": [
+        "dsid_0ae9b752fef446ec86e376e2dea49c28"
+      ],
+      "gold_uuids": [
+        "e48cf84e-4172-522d-bd63-a63f9cdf00c2"
+      ],
+      "retrieved_doc_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e"
+      ],
+      "retrieved_chunk_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f#0000",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa#0000",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e#0003",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c#0001",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e#0000"
+      ],
+      "retrieved_titles": [
+        "Session Spline \u2014 UX sprint notes and rough PRD",
+        "eng-platform",
+        "Pre-sales: session transience & KV-cache impact questionnaire",
+        "eng-platform",
+        "Pre-sales: session transience & KV-cache impact questionnaire"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0186:executive",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0186:executive",
+      "question_id": "qst_0186",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "In the notes about keeping long, stop-and-go chat sessions cheap without replaying the whole history, what storage setup and time-to-live were proposed for keeping the compact per-session state for recent sessions versus longer retention?",
+      "answer_facts": [
+        "Hot, recent per-session anchors are kept in a per-customer LRU store in Redis.",
+        "Longer-term per-session anchors are stored in S3 with a 30-day TTL."
+      ],
+      "gold_doc_ids": [
+        "dsid_0ae9b752fef446ec86e376e2dea49c28"
+      ],
+      "gold_uuids": [
+        "e48cf84e-4172-522d-bd63-a63f9cdf00c2"
+      ],
+      "retrieved_doc_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e"
+      ],
+      "retrieved_chunk_ids": [
+        "9ff60bde-181d-5bdb-a6b6-c8c5385f098f#0000",
+        "bd33b76d-2a48-52bc-8024-11563e72fafa#0000",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e#0003",
+        "4cce2b1a-dcc7-5ef4-a554-56ff16f4c11c#0001",
+        "0723fe8a-aae9-5a2e-849c-7b2366c4551e#0000"
+      ],
+      "retrieved_titles": [
+        "Session Spline \u2014 UX sprint notes and rough PRD",
+        "eng-platform",
+        "Pre-sales: session transience & KV-cache impact questionnaire",
+        "eng-platform",
+        "Pre-sales: session transience & KV-cache impact questionnaire"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0443:employee",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 10 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0443:employee",
+      "question_id": "qst_0443",
+      "role": "employee",
+      "category": "completeness",
+      "expected_behavior": "partial",
+      "question": "List every internal communication thread (email, Slack, and meeting notes) about the Redwood Private upgrade 'rollback loop' bug (including references to RRB-17 or 'stuck rollback').",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_3a052bc2335c4211923e8220c7f3c2fa",
+        "dsid_18b209d55ea04c16b687b468e4e5f2e6",
+        "dsid_9b826592387b47b29b25018823296577",
+        "dsid_a5cec1a368344e6fa3884ad47cd7d175",
+        "dsid_ccc31ea69f9d45e68b803d2a8c6c655f"
+      ],
+      "gold_uuids": [
+        "7daa3589-ce67-547b-b194-b81684cb6182",
+        "df0f4b74-3533-5f6d-91d6-8c63e8ebbe58",
+        "2a75b1e6-01f7-55b4-ae31-9c61df6d0b2f",
+        "49adb6d7-cccb-5667-a242-4e88017a69e8",
+        "f48510bd-157f-58da-8baa-abd9b1e1141c"
+      ],
+      "retrieved_doc_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440",
+        "f1113a9f-bf09-510e-9882-6875165b4f22",
+        "8bfb40c1-1abc-594a-be9b-05198b529728",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83",
+        "ef78c0c5-d089-5802-834b-046200d15d64"
+      ],
+      "retrieved_chunk_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440#0004",
+        "f1113a9f-bf09-510e-9882-6875165b4f22#0005",
+        "8bfb40c1-1abc-594a-be9b-05198b529728#0003",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83#0004",
+        "ef78c0c5-d089-5802-834b-046200d15d64#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "support",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 10
+  },
+  {
+    "test_id": "qst_0443:sales_rep",
+    "category": "reranker_performance",
+    "reason": "Gold doc was rank 10 in dense (top 10 candidate pool), but fused outside top 5 or demoted by reranker",
+    "item": {
+      "test_id": "qst_0443:sales_rep",
+      "question_id": "qst_0443",
+      "role": "sales_rep",
+      "category": "completeness",
+      "expected_behavior": "partial",
+      "question": "List every internal communication thread (email, Slack, and meeting notes) about the Redwood Private upgrade 'rollback loop' bug (including references to RRB-17 or 'stuck rollback').",
+      "answer_facts": [],
+      "gold_doc_ids": [
+        "dsid_3a052bc2335c4211923e8220c7f3c2fa",
+        "dsid_18b209d55ea04c16b687b468e4e5f2e6",
+        "dsid_9b826592387b47b29b25018823296577",
+        "dsid_a5cec1a368344e6fa3884ad47cd7d175",
+        "dsid_ccc31ea69f9d45e68b803d2a8c6c655f"
+      ],
+      "gold_uuids": [
+        "7daa3589-ce67-547b-b194-b81684cb6182",
+        "df0f4b74-3533-5f6d-91d6-8c63e8ebbe58",
+        "2a75b1e6-01f7-55b4-ae31-9c61df6d0b2f",
+        "49adb6d7-cccb-5667-a242-4e88017a69e8",
+        "f48510bd-157f-58da-8baa-abd9b1e1141c"
+      ],
+      "retrieved_doc_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440",
+        "f1113a9f-bf09-510e-9882-6875165b4f22",
+        "8bfb40c1-1abc-594a-be9b-05198b529728",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83",
+        "ef78c0c5-d089-5802-834b-046200d15d64"
+      ],
+      "retrieved_chunk_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440#0004",
+        "f1113a9f-bf09-510e-9882-6875165b4f22#0005",
+        "8bfb40c1-1abc-594a-be9b-05198b529728#0003",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83#0004",
+        "ef78c0c5-d089-5802-834b-046200d15d64#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "support",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 10
+  },
+  {
+    "test_id": "qst_0443:manager",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 11 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0443:manager",
+      "question_id": "qst_0443",
+      "role": "manager",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "List every internal communication thread (email, Slack, and meeting notes) about the Redwood Private upgrade 'rollback loop' bug (including references to RRB-17 or 'stuck rollback').",
+      "answer_facts": [
+        "There is a Slack #eng thread about the Redwood Private upgrade rollback loop bug where Ethan Park reports private upgrade rollbacks looping and Priya references RRB-17 and an installer-rollback-lock ConfigMap workaround.",
+        "There is a Slack #incidents thread INC-2147 titled Private installer rollbacks looping (possible RRB-17) about the rollback loop bug.",
+        "There is an email thread titled Re: Urgent: Redwood Private upgrade keeps rolling back (Nina Shah and Ava Chen, cc Jordan Blake and Ethan Park) discussing a rollback stuck issue and a lock-delete plus controller-restart workaround.",
+        "There is an internal email thread titled RRB-17: rollback loop in private installer (root cause + patch plan) discussing root cause, patch plan, and workaround.",
+        "There are meeting notes titled Acme -- Private upgrade escalation (rollback keeps re-triggering) dated 2026-02-14 documenting stuck rollback or rollback keeps re-triggering discussion and the same workaround."
+      ],
+      "gold_doc_ids": [
+        "dsid_3a052bc2335c4211923e8220c7f3c2fa",
+        "dsid_18b209d55ea04c16b687b468e4e5f2e6",
+        "dsid_9b826592387b47b29b25018823296577",
+        "dsid_a5cec1a368344e6fa3884ad47cd7d175",
+        "dsid_ccc31ea69f9d45e68b803d2a8c6c655f"
+      ],
+      "gold_uuids": [
+        "7daa3589-ce67-547b-b194-b81684cb6182",
+        "df0f4b74-3533-5f6d-91d6-8c63e8ebbe58",
+        "2a75b1e6-01f7-55b4-ae31-9c61df6d0b2f",
+        "49adb6d7-cccb-5667-a242-4e88017a69e8",
+        "f48510bd-157f-58da-8baa-abd9b1e1141c"
+      ],
+      "retrieved_doc_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440",
+        "f1113a9f-bf09-510e-9882-6875165b4f22",
+        "8bfb40c1-1abc-594a-be9b-05198b529728",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83",
+        "ef78c0c5-d089-5802-834b-046200d15d64"
+      ],
+      "retrieved_chunk_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440#0004",
+        "f1113a9f-bf09-510e-9882-6875165b4f22#0005",
+        "8bfb40c1-1abc-594a-be9b-05198b529728#0003",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83#0004",
+        "ef78c0c5-d089-5802-834b-046200d15d64#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "support",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 11
+  },
+  {
+    "test_id": "qst_0443:executive",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 11 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0443:executive",
+      "question_id": "qst_0443",
+      "role": "executive",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "List every internal communication thread (email, Slack, and meeting notes) about the Redwood Private upgrade 'rollback loop' bug (including references to RRB-17 or 'stuck rollback').",
+      "answer_facts": [
+        "There is a Slack #eng thread about the Redwood Private upgrade rollback loop bug where Ethan Park reports private upgrade rollbacks looping and Priya references RRB-17 and an installer-rollback-lock ConfigMap workaround.",
+        "There is a Slack #incidents thread INC-2147 titled Private installer rollbacks looping (possible RRB-17) about the rollback loop bug.",
+        "There is an email thread titled Re: Urgent: Redwood Private upgrade keeps rolling back (Nina Shah and Ava Chen, cc Jordan Blake and Ethan Park) discussing a rollback stuck issue and a lock-delete plus controller-restart workaround.",
+        "There is an internal email thread titled RRB-17: rollback loop in private installer (root cause + patch plan) discussing root cause, patch plan, and workaround.",
+        "There are meeting notes titled Acme -- Private upgrade escalation (rollback keeps re-triggering) dated 2026-02-14 documenting stuck rollback or rollback keeps re-triggering discussion and the same workaround."
+      ],
+      "gold_doc_ids": [
+        "dsid_3a052bc2335c4211923e8220c7f3c2fa",
+        "dsid_18b209d55ea04c16b687b468e4e5f2e6",
+        "dsid_9b826592387b47b29b25018823296577",
+        "dsid_a5cec1a368344e6fa3884ad47cd7d175",
+        "dsid_ccc31ea69f9d45e68b803d2a8c6c655f"
+      ],
+      "gold_uuids": [
+        "7daa3589-ce67-547b-b194-b81684cb6182",
+        "df0f4b74-3533-5f6d-91d6-8c63e8ebbe58",
+        "2a75b1e6-01f7-55b4-ae31-9c61df6d0b2f",
+        "49adb6d7-cccb-5667-a242-4e88017a69e8",
+        "f48510bd-157f-58da-8baa-abd9b1e1141c"
+      ],
+      "retrieved_doc_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440",
+        "f1113a9f-bf09-510e-9882-6875165b4f22",
+        "8bfb40c1-1abc-594a-be9b-05198b529728",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83",
+        "ef78c0c5-d089-5802-834b-046200d15d64"
+      ],
+      "retrieved_chunk_ids": [
+        "46d376f0-d7a3-5804-8d70-a22ad3cb3440#0004",
+        "f1113a9f-bf09-510e-9882-6875165b4f22#0005",
+        "8bfb40c1-1abc-594a-be9b-05198b529728#0003",
+        "fa705e14-b0b4-5184-a5d9-dae1c017cc83#0004",
+        "ef78c0c5-d089-5802-834b-046200d15d64#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "support",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 11
+  },
+  {
+    "test_id": "qst_0296:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0296:employee",
+      "question_id": "qst_0296",
+      "role": "employee",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "Who on the team committed to producing a short animated demo to embed in the upcoming renewal business review materials, and what was the demo supposed to showcase?",
+      "answer_facts": [
+        "Alan from Engineering committed to producing a short animated demo GIF to embed in the upcoming renewal business review (QBR) materials.",
+        "The demo was supposed to showcase the new onboarding dashboard.",
+        "The demo was supposed to highlight onboarding funnel and performance and user journeys.",
+        "The demo was supposed to include metrics such as time to first successful API call and top errors.",
+        "The demo was supposed to be an anonymized, non-production demo."
+      ],
+      "gold_doc_ids": [
+        "dsid_0d7ec9095f1b41fba11cca1c8887bc2c"
+      ],
+      "gold_uuids": [
+        "5dc484d9-8681-59e9-a8f7-38a5991cc4ae"
+      ],
+      "retrieved_doc_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "40150179-c080-54c5-8fb6-03721667a7d4",
+        "694b1c69-616d-5d75-bef9-5b6d8da79179",
+        "a80ea6ce-38a9-5e49-8649-c1fd63733c7b"
+      ],
+      "retrieved_chunk_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0000",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0001",
+        "40150179-c080-54c5-8fb6-03721667a7d4#0002",
+        "694b1c69-616d-5d75-bef9-5b6d8da79179#0003",
+        "a80ea6ce-38a9-5e49-8649-c1fd63733c7b#0001"
+      ],
+      "retrieved_titles": [
+        "customer-success",
+        "customer-success",
+        "marketing",
+        "product",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0296:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0296:sales_rep",
+      "question_id": "qst_0296",
+      "role": "sales_rep",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "Who on the team committed to producing a short animated demo to embed in the upcoming renewal business review materials, and what was the demo supposed to showcase?",
+      "answer_facts": [
+        "Alan from Engineering committed to producing a short animated demo GIF to embed in the upcoming renewal business review (QBR) materials.",
+        "The demo was supposed to showcase the new onboarding dashboard.",
+        "The demo was supposed to highlight onboarding funnel and performance and user journeys.",
+        "The demo was supposed to include metrics such as time to first successful API call and top errors.",
+        "The demo was supposed to be an anonymized, non-production demo."
+      ],
+      "gold_doc_ids": [
+        "dsid_0d7ec9095f1b41fba11cca1c8887bc2c"
+      ],
+      "gold_uuids": [
+        "5dc484d9-8681-59e9-a8f7-38a5991cc4ae"
+      ],
+      "retrieved_doc_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "40150179-c080-54c5-8fb6-03721667a7d4",
+        "694b1c69-616d-5d75-bef9-5b6d8da79179",
+        "a80ea6ce-38a9-5e49-8649-c1fd63733c7b"
+      ],
+      "retrieved_chunk_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0000",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0001",
+        "40150179-c080-54c5-8fb6-03721667a7d4#0002",
+        "694b1c69-616d-5d75-bef9-5b6d8da79179#0003",
+        "a80ea6ce-38a9-5e49-8649-c1fd63733c7b#0001"
+      ],
+      "retrieved_titles": [
+        "customer-success",
+        "customer-success",
+        "marketing",
+        "product",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0296:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0296:manager",
+      "question_id": "qst_0296",
+      "role": "manager",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "Who on the team committed to producing a short animated demo to embed in the upcoming renewal business review materials, and what was the demo supposed to showcase?",
+      "answer_facts": [
+        "Alan from Engineering committed to producing a short animated demo GIF to embed in the upcoming renewal business review (QBR) materials.",
+        "The demo was supposed to showcase the new onboarding dashboard.",
+        "The demo was supposed to highlight onboarding funnel and performance and user journeys.",
+        "The demo was supposed to include metrics such as time to first successful API call and top errors.",
+        "The demo was supposed to be an anonymized, non-production demo."
+      ],
+      "gold_doc_ids": [
+        "dsid_0d7ec9095f1b41fba11cca1c8887bc2c"
+      ],
+      "gold_uuids": [
+        "5dc484d9-8681-59e9-a8f7-38a5991cc4ae"
+      ],
+      "retrieved_doc_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "40150179-c080-54c5-8fb6-03721667a7d4",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d"
+      ],
+      "retrieved_chunk_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0000",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0001",
+        "40150179-c080-54c5-8fb6-03721667a7d4#0002",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d#0003",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d#0001"
+      ],
+      "retrieved_titles": [
+        "customer-success",
+        "customer-success",
+        "marketing",
+        "Novaflow demo timing \u2014 deprioritized this quarter (re: scheduling)",
+        "Novaflow demo timing \u2014 deprioritized this quarter (re: scheduling)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0296:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0296:executive",
+      "question_id": "qst_0296",
+      "role": "executive",
+      "category": "semantic",
+      "expected_behavior": "answer",
+      "question": "Who on the team committed to producing a short animated demo to embed in the upcoming renewal business review materials, and what was the demo supposed to showcase?",
+      "answer_facts": [
+        "Alan from Engineering committed to producing a short animated demo GIF to embed in the upcoming renewal business review (QBR) materials.",
+        "The demo was supposed to showcase the new onboarding dashboard.",
+        "The demo was supposed to highlight onboarding funnel and performance and user journeys.",
+        "The demo was supposed to include metrics such as time to first successful API call and top errors.",
+        "The demo was supposed to be an anonymized, non-production demo."
+      ],
+      "gold_doc_ids": [
+        "dsid_0d7ec9095f1b41fba11cca1c8887bc2c"
+      ],
+      "gold_uuids": [
+        "5dc484d9-8681-59e9-a8f7-38a5991cc4ae"
+      ],
+      "retrieved_doc_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd",
+        "40150179-c080-54c5-8fb6-03721667a7d4",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d"
+      ],
+      "retrieved_chunk_ids": [
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0000",
+        "c6ef5069-4cca-5b7b-ac93-31bb9a0a16dd#0001",
+        "40150179-c080-54c5-8fb6-03721667a7d4#0002",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d#0003",
+        "3cf4b266-47b9-5451-b3aa-f2d7bbc9332d#0001"
+      ],
+      "retrieved_titles": [
+        "customer-success",
+        "customer-success",
+        "marketing",
+        "Novaflow demo timing \u2014 deprioritized this quarter (re: scheduling)",
+        "Novaflow demo timing \u2014 deprioritized this quarter (re: scheduling)"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0036:employee",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 26 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0036:employee",
+      "question_id": "qst_0036",
+      "role": "employee",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "What telemetry events and alert threshold are required to monitor streaming responses when a downstream tool call fails but the system continues with degraded output?",
+      "answer_facts": [
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.start.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.end including a status field.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.frame.commit.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.soft_fail.marker.",
+        "If the consumer reconnects, telemetry must emit stream.resume.attempt.",
+        "Each of these telemetry events must include trace_id and frame_offset.",
+        "A production alert is required to trigger when soft_fail_rate exceeds 0.5% over a 5-minute window."
+      ],
+      "gold_doc_ids": [
+        "dsid_f94b93a4bc7948ddab45c371187dc6c6"
+      ],
+      "gold_uuids": [
+        "1cc05b0e-f3e3-522d-848e-48c5af83be39"
+      ],
+      "retrieved_doc_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7",
+        "b08e4115-029b-5307-9ec7-31c513f179b7",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53"
+      ],
+      "retrieved_chunk_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea#0007",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7#0000",
+        "b08e4115-029b-5307-9ec7-31c513f179b7#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0022",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53#0000"
+      ],
+      "retrieved_titles": [
+        "Incident taxonomy v1: definitions, subtypes, and on-call decision tree",
+        "incidents",
+        "incidents",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 26
+  },
+  {
+    "test_id": "qst_0036:sales_rep",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 26 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0036:sales_rep",
+      "question_id": "qst_0036",
+      "role": "sales_rep",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "What telemetry events and alert threshold are required to monitor streaming responses when a downstream tool call fails but the system continues with degraded output?",
+      "answer_facts": [
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.start.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.end including a status field.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.frame.commit.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.soft_fail.marker.",
+        "If the consumer reconnects, telemetry must emit stream.resume.attempt.",
+        "Each of these telemetry events must include trace_id and frame_offset.",
+        "A production alert is required to trigger when soft_fail_rate exceeds 0.5% over a 5-minute window."
+      ],
+      "gold_doc_ids": [
+        "dsid_f94b93a4bc7948ddab45c371187dc6c6"
+      ],
+      "gold_uuids": [
+        "1cc05b0e-f3e3-522d-848e-48c5af83be39"
+      ],
+      "retrieved_doc_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7",
+        "b08e4115-029b-5307-9ec7-31c513f179b7",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53"
+      ],
+      "retrieved_chunk_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea#0007",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7#0000",
+        "b08e4115-029b-5307-9ec7-31c513f179b7#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0022",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53#0000"
+      ],
+      "retrieved_titles": [
+        "Incident taxonomy v1: definitions, subtypes, and on-call decision tree",
+        "incidents",
+        "incidents",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 26
+  },
+  {
+    "test_id": "qst_0036:manager",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 28 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0036:manager",
+      "question_id": "qst_0036",
+      "role": "manager",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "What telemetry events and alert threshold are required to monitor streaming responses when a downstream tool call fails but the system continues with degraded output?",
+      "answer_facts": [
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.start.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.end including a status field.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.frame.commit.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.soft_fail.marker.",
+        "If the consumer reconnects, telemetry must emit stream.resume.attempt.",
+        "Each of these telemetry events must include trace_id and frame_offset.",
+        "A production alert is required to trigger when soft_fail_rate exceeds 0.5% over a 5-minute window."
+      ],
+      "gold_doc_ids": [
+        "dsid_f94b93a4bc7948ddab45c371187dc6c6"
+      ],
+      "gold_uuids": [
+        "1cc05b0e-f3e3-522d-848e-48c5af83be39"
+      ],
+      "retrieved_doc_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7",
+        "b08e4115-029b-5307-9ec7-31c513f179b7",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53"
+      ],
+      "retrieved_chunk_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea#0007",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7#0000",
+        "b08e4115-029b-5307-9ec7-31c513f179b7#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0022",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53#0000"
+      ],
+      "retrieved_titles": [
+        "Incident taxonomy v1: definitions, subtypes, and on-call decision tree",
+        "incidents",
+        "incidents",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 28
+  },
+  {
+    "test_id": "qst_0036:executive",
+    "category": "chunking_and_context_fragmentation",
+    "reason": "Context fragmentation: gold doc was deep at rank 33 (21-50), content scattered or diluted",
+    "item": {
+      "test_id": "qst_0036:executive",
+      "question_id": "qst_0036",
+      "role": "executive",
+      "category": "basic",
+      "expected_behavior": "answer",
+      "question": "What telemetry events and alert threshold are required to monitor streaming responses when a downstream tool call fails but the system continues with degraded output?",
+      "answer_facts": [
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.start.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit tool_invocation.end including a status field.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.frame.commit.",
+        "To monitor streaming responses with a soft-fail degraded output, telemetry must emit stream.soft_fail.marker.",
+        "If the consumer reconnects, telemetry must emit stream.resume.attempt.",
+        "Each of these telemetry events must include trace_id and frame_offset.",
+        "A production alert is required to trigger when soft_fail_rate exceeds 0.5% over a 5-minute window."
+      ],
+      "gold_doc_ids": [
+        "dsid_f94b93a4bc7948ddab45c371187dc6c6"
+      ],
+      "gold_uuids": [
+        "1cc05b0e-f3e3-522d-848e-48c5af83be39"
+      ],
+      "retrieved_doc_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7",
+        "b08e4115-029b-5307-9ec7-31c513f179b7",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53"
+      ],
+      "retrieved_chunk_ids": [
+        "71330b12-05b8-55fa-b9de-2a7c6a4c17ea#0007",
+        "4da4407f-f22b-5fdc-b92c-b536417ed7f7#0000",
+        "b08e4115-029b-5307-9ec7-31c513f179b7#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0022",
+        "6a460e13-ab8f-5d1f-824f-b7b42af54b53#0000"
+      ],
+      "retrieved_titles": [
+        "Incident taxonomy v1: definitions, subtypes, and on-call decision tree",
+        "incidents",
+        "incidents",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 33
+  },
+  {
+    "test_id": "qst_0439:employee",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0439:employee",
+      "question_id": "qst_0439",
+      "role": "employee",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many internal incident writeups at Redwood Inference describe activating automatic fallback (to a different model or region) as part of mitigation?",
+      "answer_facts": [
+        "4 internal incident writeups at Redwood Inference describe activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-02-11 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-03-03 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-06-08 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-07-22 describes activating automatic fallback as part of mitigation"
+      ],
+      "gold_doc_ids": [
+        "dsid_4e016427a93c49ffadd31fcdc1dca792",
+        "dsid_d3edd63b9ec54523ad12bd9be3d7e996",
+        "dsid_faf3246a6ce845e6b5df0ae52f439399",
+        "dsid_bf7e79dc1331447598c4eebdc5d2897d",
+        "dsid_a277ed2dc74c4bad82bc71b534b6356f"
+      ],
+      "gold_uuids": [
+        "03c1f672-2c88-517a-9736-5ad4964b44f6",
+        "6996bee4-36ee-52dc-b920-4c4bc4f17c6a",
+        "c8199765-5b68-5649-9c1e-aa0d77647594",
+        "c0214072-489f-5091-af6f-bd03861467dd",
+        "61ce04a4-ef03-5093-a0ce-a44e71e20035"
+      ],
+      "retrieved_doc_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac",
+        "34822dca-d4a2-5537-92be-e5a334172496",
+        "cff33a48-126b-55cf-959d-e37c336d64c1",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847"
+      ],
+      "retrieved_chunk_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b#0000",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0001",
+        "34822dca-d4a2-5537-92be-e5a334172496#0000",
+        "cff33a48-126b-55cf-959d-e37c336d64c1#0001",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0439:sales_rep",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0439:sales_rep",
+      "question_id": "qst_0439",
+      "role": "sales_rep",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many internal incident writeups at Redwood Inference describe activating automatic fallback (to a different model or region) as part of mitigation?",
+      "answer_facts": [
+        "4 internal incident writeups at Redwood Inference describe activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-02-11 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-03-03 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-06-08 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-07-22 describes activating automatic fallback as part of mitigation"
+      ],
+      "gold_doc_ids": [
+        "dsid_4e016427a93c49ffadd31fcdc1dca792",
+        "dsid_d3edd63b9ec54523ad12bd9be3d7e996",
+        "dsid_faf3246a6ce845e6b5df0ae52f439399",
+        "dsid_bf7e79dc1331447598c4eebdc5d2897d",
+        "dsid_a277ed2dc74c4bad82bc71b534b6356f"
+      ],
+      "gold_uuids": [
+        "03c1f672-2c88-517a-9736-5ad4964b44f6",
+        "6996bee4-36ee-52dc-b920-4c4bc4f17c6a",
+        "c8199765-5b68-5649-9c1e-aa0d77647594",
+        "c0214072-489f-5091-af6f-bd03861467dd",
+        "61ce04a4-ef03-5093-a0ce-a44e71e20035"
+      ],
+      "retrieved_doc_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac",
+        "34822dca-d4a2-5537-92be-e5a334172496",
+        "cff33a48-126b-55cf-959d-e37c336d64c1",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847"
+      ],
+      "retrieved_chunk_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b#0000",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0001",
+        "34822dca-d4a2-5537-92be-e5a334172496#0000",
+        "cff33a48-126b-55cf-959d-e37c336d64c1#0001",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0439:manager",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0439:manager",
+      "question_id": "qst_0439",
+      "role": "manager",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many internal incident writeups at Redwood Inference describe activating automatic fallback (to a different model or region) as part of mitigation?",
+      "answer_facts": [
+        "4 internal incident writeups at Redwood Inference describe activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-02-11 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-03-03 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-06-08 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-07-22 describes activating automatic fallback as part of mitigation"
+      ],
+      "gold_doc_ids": [
+        "dsid_4e016427a93c49ffadd31fcdc1dca792",
+        "dsid_d3edd63b9ec54523ad12bd9be3d7e996",
+        "dsid_faf3246a6ce845e6b5df0ae52f439399",
+        "dsid_bf7e79dc1331447598c4eebdc5d2897d",
+        "dsid_a277ed2dc74c4bad82bc71b534b6356f"
+      ],
+      "gold_uuids": [
+        "03c1f672-2c88-517a-9736-5ad4964b44f6",
+        "6996bee4-36ee-52dc-b920-4c4bc4f17c6a",
+        "c8199765-5b68-5649-9c1e-aa0d77647594",
+        "c0214072-489f-5091-af6f-bd03861467dd",
+        "61ce04a4-ef03-5093-a0ce-a44e71e20035"
+      ],
+      "retrieved_doc_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac",
+        "34822dca-d4a2-5537-92be-e5a334172496",
+        "cff33a48-126b-55cf-959d-e37c336d64c1",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847"
+      ],
+      "retrieved_chunk_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b#0000",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0001",
+        "34822dca-d4a2-5537-92be-e5a334172496#0000",
+        "cff33a48-126b-55cf-959d-e37c336d64c1#0001",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0439:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0439:executive",
+      "question_id": "qst_0439",
+      "role": "executive",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "How many internal incident writeups at Redwood Inference describe activating automatic fallback (to a different model or region) as part of mitigation?",
+      "answer_facts": [
+        "4 internal incident writeups at Redwood Inference describe activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-02-11 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-03-03 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-06-08 describes activating automatic fallback as part of mitigation",
+        "The incident writeup dated 2025-07-22 describes activating automatic fallback as part of mitigation"
+      ],
+      "gold_doc_ids": [
+        "dsid_4e016427a93c49ffadd31fcdc1dca792",
+        "dsid_d3edd63b9ec54523ad12bd9be3d7e996",
+        "dsid_faf3246a6ce845e6b5df0ae52f439399",
+        "dsid_bf7e79dc1331447598c4eebdc5d2897d",
+        "dsid_a277ed2dc74c4bad82bc71b534b6356f"
+      ],
+      "gold_uuids": [
+        "03c1f672-2c88-517a-9736-5ad4964b44f6",
+        "6996bee4-36ee-52dc-b920-4c4bc4f17c6a",
+        "c8199765-5b68-5649-9c1e-aa0d77647594",
+        "c0214072-489f-5091-af6f-bd03861467dd",
+        "61ce04a4-ef03-5093-a0ce-a44e71e20035"
+      ],
+      "retrieved_doc_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac",
+        "34822dca-d4a2-5537-92be-e5a334172496",
+        "cff33a48-126b-55cf-959d-e37c336d64c1",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847"
+      ],
+      "retrieved_chunk_ids": [
+        "5b089016-e3c4-5aaf-96f8-a79ef7c0020b#0000",
+        "8910f148-73c4-5c45-a4ba-d684c1c57cac#0001",
+        "34822dca-d4a2-5537-92be-e5a334172496#0000",
+        "cff33a48-126b-55cf-959d-e37c336d64c1#0001",
+        "9f6e044e-0a4c-574b-a05e-1990e1d68847#0001"
+      ],
+      "retrieved_titles": [
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents",
+        "incidents"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  },
+  {
+    "test_id": "qst_0449:employee",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 12 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0449:employee",
+      "question_id": "qst_0449",
+      "role": "employee",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "In March 2026, which deployment offering-Hosted API, Dedicated, or Private-had the most customer support escalations where the primary symptom was request timeouts?",
+      "answer_facts": [
+        "In March 2026, the Hosted API offering had the most customer support escalations where the primary symptom was request timeouts.",
+        "In March 2026, Hosted API had 3 such escalations.",
+        "In March 2026, Dedicated had 2 such escalations.",
+        "In March 2026, Private had 1 such escalation."
+      ],
+      "gold_doc_ids": [
+        "dsid_8dff963a50774cdd84131d9ae5e4f4f3",
+        "dsid_5cf1a6657f1848968b2fd154066950ae",
+        "dsid_97992c0043184c7b9c10ed2106482ae1",
+        "dsid_e17e3ec88d4947bbb53c8190ccc90c54",
+        "dsid_19354d85a1d14a469274135ccb314a20",
+        "dsid_cc49c932507c42959ba9e4824f0d6b7f"
+      ],
+      "gold_uuids": [
+        "23c636bc-bab7-5e3f-b2af-2729b28d8aaa",
+        "12cafc63-0b59-50b7-9b01-824baa4563f8",
+        "8e856e81-f3d3-5f37-b613-26beaece816c",
+        "1599f0a2-abf5-5330-b2f8-abbc6217f59f",
+        "3b59254f-8aca-5d1a-a78e-b0cf2ed3c99f",
+        "d1740463-b0a6-5c40-b002-53d8e6b90837"
+      ],
+      "retrieved_doc_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9"
+      ],
+      "retrieved_chunk_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2#0000",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0009",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0018",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "support",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 12
+  },
+  {
+    "test_id": "qst_0449:sales_rep",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 12 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0449:sales_rep",
+      "question_id": "qst_0449",
+      "role": "sales_rep",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "In March 2026, which deployment offering-Hosted API, Dedicated, or Private-had the most customer support escalations where the primary symptom was request timeouts?",
+      "answer_facts": [
+        "In March 2026, the Hosted API offering had the most customer support escalations where the primary symptom was request timeouts.",
+        "In March 2026, Hosted API had 3 such escalations.",
+        "In March 2026, Dedicated had 2 such escalations.",
+        "In March 2026, Private had 1 such escalation."
+      ],
+      "gold_doc_ids": [
+        "dsid_8dff963a50774cdd84131d9ae5e4f4f3",
+        "dsid_5cf1a6657f1848968b2fd154066950ae",
+        "dsid_97992c0043184c7b9c10ed2106482ae1",
+        "dsid_e17e3ec88d4947bbb53c8190ccc90c54",
+        "dsid_19354d85a1d14a469274135ccb314a20",
+        "dsid_cc49c932507c42959ba9e4824f0d6b7f"
+      ],
+      "gold_uuids": [
+        "23c636bc-bab7-5e3f-b2af-2729b28d8aaa",
+        "12cafc63-0b59-50b7-9b01-824baa4563f8",
+        "8e856e81-f3d3-5f37-b613-26beaece816c",
+        "1599f0a2-abf5-5330-b2f8-abbc6217f59f",
+        "3b59254f-8aca-5d1a-a78e-b0cf2ed3c99f",
+        "d1740463-b0a6-5c40-b002-53d8e6b90837"
+      ],
+      "retrieved_doc_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9"
+      ],
+      "retrieved_chunk_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2#0000",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0009",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0018",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "support",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 12
+  },
+  {
+    "test_id": "qst_0449:manager",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0449:manager",
+      "question_id": "qst_0449",
+      "role": "manager",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "In March 2026, which deployment offering-Hosted API, Dedicated, or Private-had the most customer support escalations where the primary symptom was request timeouts?",
+      "answer_facts": [
+        "In March 2026, the Hosted API offering had the most customer support escalations where the primary symptom was request timeouts.",
+        "In March 2026, Hosted API had 3 such escalations.",
+        "In March 2026, Dedicated had 2 such escalations.",
+        "In March 2026, Private had 1 such escalation."
+      ],
+      "gold_doc_ids": [
+        "dsid_8dff963a50774cdd84131d9ae5e4f4f3",
+        "dsid_5cf1a6657f1848968b2fd154066950ae",
+        "dsid_97992c0043184c7b9c10ed2106482ae1",
+        "dsid_e17e3ec88d4947bbb53c8190ccc90c54",
+        "dsid_19354d85a1d14a469274135ccb314a20",
+        "dsid_cc49c932507c42959ba9e4824f0d6b7f"
+      ],
+      "gold_uuids": [
+        "23c636bc-bab7-5e3f-b2af-2729b28d8aaa",
+        "12cafc63-0b59-50b7-9b01-824baa4563f8",
+        "8e856e81-f3d3-5f37-b613-26beaece816c",
+        "1599f0a2-abf5-5330-b2f8-abbc6217f59f",
+        "3b59254f-8aca-5d1a-a78e-b0cf2ed3c99f",
+        "d1740463-b0a6-5c40-b002-53d8e6b90837"
+      ],
+      "retrieved_doc_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9"
+      ],
+      "retrieved_chunk_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2#0000",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0009",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0018",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "support",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0449:executive",
+    "category": "rrf_ranking",
+    "reason": "Candidate pool cutoff: gold doc was rank 14 in dense (retrievable with cand=20, but missed with cand=10 / pool=5)",
+    "item": {
+      "test_id": "qst_0449:executive",
+      "question_id": "qst_0449",
+      "role": "executive",
+      "category": "completeness",
+      "expected_behavior": "answer",
+      "question": "In March 2026, which deployment offering-Hosted API, Dedicated, or Private-had the most customer support escalations where the primary symptom was request timeouts?",
+      "answer_facts": [
+        "In March 2026, the Hosted API offering had the most customer support escalations where the primary symptom was request timeouts.",
+        "In March 2026, Hosted API had 3 such escalations.",
+        "In March 2026, Dedicated had 2 such escalations.",
+        "In March 2026, Private had 1 such escalation."
+      ],
+      "gold_doc_ids": [
+        "dsid_8dff963a50774cdd84131d9ae5e4f4f3",
+        "dsid_5cf1a6657f1848968b2fd154066950ae",
+        "dsid_97992c0043184c7b9c10ed2106482ae1",
+        "dsid_e17e3ec88d4947bbb53c8190ccc90c54",
+        "dsid_19354d85a1d14a469274135ccb314a20",
+        "dsid_cc49c932507c42959ba9e4824f0d6b7f"
+      ],
+      "gold_uuids": [
+        "23c636bc-bab7-5e3f-b2af-2729b28d8aaa",
+        "12cafc63-0b59-50b7-9b01-824baa4563f8",
+        "8e856e81-f3d3-5f37-b613-26beaece816c",
+        "1599f0a2-abf5-5330-b2f8-abbc6217f59f",
+        "3b59254f-8aca-5d1a-a78e-b0cf2ed3c99f",
+        "d1740463-b0a6-5c40-b002-53d8e6b90837"
+      ],
+      "retrieved_doc_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9"
+      ],
+      "retrieved_chunk_ids": [
+        "90207bec-e6e6-5db7-9258-15365fd93fe2#0000",
+        "6e94920e-5899-5d44-885a-972db1e9aa9b#0000",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0009",
+        "a5be1f11-d4af-5ec1-8593-e7fcbb738ca2#0018",
+        "1e6579ca-7b7a-5068-8476-9cb428534ed9#0000"
+      ],
+      "retrieved_titles": [
+        "support",
+        "support",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "Tiered SLO \u2192 SLA Mapping (Hosted API vs Dedicated)",
+        "customer-success"
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": 14
+  },
+  {
+    "test_id": "qst_0413:executive",
+    "category": "embedding_quality",
+    "reason": "Semantic gap: gold chunks ranked > 50 in pgvector dense search",
+    "item": {
+      "test_id": "qst_0413:executive",
+      "question_id": "qst_0413",
+      "role": "executive",
+      "category": "conflicting_info",
+      "expected_behavior": "answer",
+      "question": "Who approves terminating STALE-ORPHAN test instances after the 72h grace window-infra manager or cost-ops?",
+      "answer_facts": [
+        "The answer must state that Priya Desai (cost-ops) says cost-ops approves termination after the grace window.",
+        "The answer must mention that Miguel Reyes asked about needing a short approval from the infra manager, but that this approval is not confirmed/recorded in the ticket.",
+        "The answer must keep the grace window as 72 hours (not a different duration).",
+        "The answer must not claim an infra manager explicitly approved the termination (no such approval is present).",
+        "The answer must not introduce names not present in the documents as the approver.",
+        "The answer may mention that the runbook suggests notifying owners for 48 hours before cleanup, but must not change that duration.",
+        "The answer must not change the stated monthly spend estimate (~$1.2k).",
+        "The answer must not invent additional volumes beyond vol-0a1b2c3d being snapshotted."
+      ],
+      "gold_doc_ids": [
+        "dsid_6df52fdb96ae4edcb76464738bca3340",
+        "dsid_6df52fdb96ae4edcb76464738bca3340"
+      ],
+      "gold_uuids": [
+        "90dbb597-88df-5a68-9970-0e72bcd82253"
+      ],
+      "retrieved_doc_ids": [],
+      "retrieved_chunk_ids": [],
+      "retrieved_titles": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    "dense_best_rank": null,
+    "fts_match_count": 0
+  }
+]

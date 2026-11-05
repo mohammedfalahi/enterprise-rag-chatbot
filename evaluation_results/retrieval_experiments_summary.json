@@ -1,0 +1,167 @@
+[
+  {
+    "Experiment": "Hybrid RRF + Reranker (Baseline)",
+    "Mode": "hybrid_rerank",
+    "Top-K": 5,
+    "Recall@K": 0.5561,
+    "Precision@K": 0.1858,
+    "MRR": 0.6524,
+    "nDCG@K": 0.5774,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 1.0
+  },
+  {
+    "Experiment": "Dense Alone",
+    "Mode": "dense_only",
+    "Top-K": 5,
+    "Recall@K": 0.5561,
+    "Precision@K": 0.1858,
+    "MRR": 0.6578,
+    "nDCG@K": 0.5751,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "BM25 Alone",
+    "Mode": "sparse_only",
+    "Top-K": 5,
+    "Recall@K": 0.0,
+    "Precision@K": 0.0,
+    "MRR": 0.0,
+    "nDCG@K": 0.0,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 1.0
+  },
+  {
+    "Experiment": "Hybrid RRF Alone (k=60)",
+    "Mode": "hybrid_rrf",
+    "Top-K": 5,
+    "Recall@K": 0.5561,
+    "Precision@K": 0.1858,
+    "MRR": 0.6578,
+    "nDCG@K": 0.5751,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Hybrid RRF + Reranker (top_k=3)",
+    "Mode": "hybrid_rerank",
+    "Top-K": 3,
+    "Recall@K": 0.5264,
+    "Precision@K": 0.2741,
+    "MRR": 0.6489,
+    "nDCG@K": 0.5685,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 1.0
+  },
+  {
+    "Experiment": "Hybrid RRF + Reranker (top_k=10, cand=20, pool=10)",
+    "Mode": "hybrid_rerank",
+    "Top-K": 10,
+    "Recall@K": 0.6085,
+    "Precision@K": 0.1084,
+    "MRR": 0.6793,
+    "nDCG@K": 0.6118,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.8
+  },
+  {
+    "Experiment": "Dense Alone (top_k=3)",
+    "Mode": "dense_only",
+    "Top-K": 3,
+    "Recall@K": 0.5275,
+    "Precision@K": 0.2919,
+    "MRR": 0.6533,
+    "nDCG@K": 0.5787,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Dense Alone (top_k=10)",
+    "Mode": "dense_only",
+    "Top-K": 10,
+    "Recall@K": 0.6085,
+    "Precision@K": 0.1084,
+    "MRR": 0.6621,
+    "nDCG@K": 0.5912,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "BM25 Alone (top_k=3)",
+    "Mode": "sparse_only",
+    "Top-K": 3,
+    "Recall@K": 0.0,
+    "Precision@K": 0.0,
+    "MRR": 0.0,
+    "nDCG@K": 0.0,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 1.0
+  },
+  {
+    "Experiment": "BM25 Alone (top_k=10)",
+    "Mode": "sparse_only",
+    "Top-K": 10,
+    "Recall@K": 0.0,
+    "Precision@K": 0.0,
+    "MRR": 0.0,
+    "nDCG@K": 0.0,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 1.0
+  },
+  {
+    "Experiment": "Hybrid RRF Alone (top_k=3)",
+    "Mode": "hybrid_rrf",
+    "Top-K": 3,
+    "Recall@K": 0.5275,
+    "Precision@K": 0.2919,
+    "MRR": 0.6533,
+    "nDCG@K": 0.5787,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Hybrid RRF Alone (top_k=10)",
+    "Mode": "hybrid_rrf",
+    "Top-K": 10,
+    "Recall@K": 0.6085,
+    "Precision@K": 0.1084,
+    "MRR": 0.6621,
+    "nDCG@K": 0.5912,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Hybrid RRF Alone (k_rrf=20)",
+    "Mode": "hybrid_rrf",
+    "Top-K": 5,
+    "Recall@K": 0.5561,
+    "Precision@K": 0.1858,
+    "MRR": 0.6578,
+    "nDCG@K": 0.5751,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Hybrid RRF Alone (k_rrf=100)",
+    "Mode": "hybrid_rrf",
+    "Top-K": 5,
+    "Recall@K": 0.5561,
+    "Precision@K": 0.1858,
+    "MRR": 0.6578,
+    "nDCG@K": 0.5751,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.0
+  },
+  {
+    "Experiment": "Hybrid RRF + Reranker (cand=20, pool=10, top_k=5)",
+    "Mode": "hybrid_rerank",
+    "Top-K": 5,
+    "Recall@K": 0.5951,
+    "Precision@K": 0.2018,
+    "MRR": 0.6763,
+    "nDCG@K": 0.6121,
+    "Leakage Rate": 0.0,
+    "Injection Refusal": 0.8
+  }
+]
