@@ -17,6 +17,14 @@ from app.core.config import settings
 from app.eval.metrics.generation import evaluate_ragas_records
 
 REQUIRED_FIELDS = ("user_input", "response", "retrieved_contexts", "reference")
+TRACEABILITY_FIELDS = (
+    "test_id",
+    "question_id",
+    "role",
+    "category",
+    "generation_provider",
+    "generation_model",
+)
 
 
 def load_evaluation_records(path: str | Path) -> list[dict[str, Any]]:
@@ -52,7 +60,11 @@ def load_evaluation_records(path: str | Path) -> list[dict[str, Any]]:
                 raise ValueError(
                     f"{source}:{line_number}: retrieved_contexts must be a non-empty list of text"
                 )
-            records.append({field: row[field] for field in REQUIRED_FIELDS})
+            rec = {field: row[field] for field in REQUIRED_FIELDS}
+            for field in TRACEABILITY_FIELDS:
+                if field in row and row[field] is not None:
+                    rec[field] = row[field]
+            records.append(rec)
 
     if not records:
         raise ValueError(f"{source}: no evaluation records found")
@@ -77,10 +89,11 @@ def main() -> None:
         records = records[:args.limit]
 
     report = run_ragas(records)
-    print(json.dumps(report, indent=2, sort_keys=True))
+    output_str = json.dumps(report, indent=2, sort_keys=True, allow_nan=False)
+    print(output_str)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        args.output.write_text(output_str + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

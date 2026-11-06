@@ -65,6 +65,22 @@ export interface EvaluationSummary {
   };
 }
 
+export type EvaluationRunStatus = "pending" | "running" | "completed" | "failed";
+
+export interface EvaluationRun {
+  id: string;
+  status: EvaluationRunStatus;
+  sample_size: number;
+  mode: string;
+  top_k: number;
+  candidate_limit: number;
+  rerank_pool_size: number;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
 export interface MetricTrendPoint {
   name: string;
   mode: string;
@@ -128,4 +144,3 @@ export interface ErrorAnalysisResponse {
     cross_encoder_score?: number;
   }>;
 }
-

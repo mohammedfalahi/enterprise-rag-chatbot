@@ -11,13 +11,23 @@ import json
 import logging
 from pathlib import Path
 from typing import Any, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.security import CurrentUser, get_current_user
+from app.db.evaluations import (
+    create_evaluation_run,
+    get_evaluation_run,
+    get_latest_completed_evaluation_run,
+    get_latest_evaluation_run,
+    list_evaluation_runs,
+    update_evaluation_run,
+)
 from app.eval.runner import evaluate_dataset
+from app.observability.redaction import scrub_string
 
 logger = logging.getLogger("app.api.evaluations")
 router = APIRouter()
@@ -45,6 +55,25 @@ def _get_eval_results_dir() -> Path:
         if c.is_dir():
             return c
     return candidates[0]
+
+
+def _run_status(run: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: run[key]
+        for key in (
+            "id",
+            "status",
+            "sample_size",
+            "mode",
+            "top_k",
+            "candidate_limit",
+            "rerank_pool_size",
+            "error_message",
+            "created_at",
+            "started_at",
+            "completed_at",
+        )
+    }
 
 
 class RunEvaluationRequest(BaseModel):
@@ -86,7 +115,7 @@ async def get_latest_evaluation_summary(
 
     ragas_metrics = ragas_data.get("aggregate_metrics", {})
 
-    return {
+    result = {
         "tenant_id": user.tenant_id,
         "sample_size": ragas_data.get("record_count", 20),
         "total_benchmark_cases": 320,
@@ -122,6 +151,39 @@ async def get_latest_evaluation_summary(
             "prompt_injection_refusal_rate": baseline_exp.get("Injection Refusal", 1.0),
         },
     }
+    latest_run = await get_latest_completed_evaluation_run(user.tenant_id)
+    if latest_run and latest_run["status"] == "completed" and latest_run.get("report"):
+        report = latest_run["report"]
+        retrieval = report.get("retrieval") or {}
+        refusal = report.get("refusal") or {}
+        generation = report.get("generation") or {}
+        result["sample_size"] = latest_run["sample_size"]
+        result["retrieval_metrics"] = {
+            "top_k": retrieval.get("k", latest_run["top_k"]),
+            "recall_at_k": retrieval.get("recall_at_k", 0.0),
+            "precision_at_k": retrieval.get("precision_at_k", 0.0),
+            "mrr": retrieval.get("mrr", 0.0),
+            "ndcg_at_k": retrieval.get("ndcg_at_k", 0.0),
+            "permission_leakage_rate": retrieval.get("permission_leakage_rate", 0.0),
+        }
+        result["refusal_metrics"] = {
+            "refusal_precision": refusal.get("precision", 0.0),
+            "refusal_recall": refusal.get("recall", 0.0),
+            "refusal_f1": refusal.get("f1_score", 0.0),
+            "prompt_injection_refusal_rate": (
+                1.0 - refusal.get("false_answers", 0) / max(refusal.get("total_unanswerable", 0), 1)
+            ),
+        }
+        for key in (
+            "faithfulness",
+            "answer_relevancy",
+            "answer_correctness",
+            "context_recall",
+            "context_precision",
+        ):
+            if generation.get(key) is not None:
+                result["generation_metrics"][key] = generation[key]
+    return result
 
 
 @router.get("/history")
@@ -152,6 +214,45 @@ async def get_evaluation_history(
             "ndcg": exp.get("nDCG@K", 0.0),
             "leakage": exp.get("Leakage Rate", 0.0),
             "refusal": exp.get("Injection Refusal", 0.0),
+        })
+
+    runs = await list_evaluation_runs(user.tenant_id)
+    run_experiments = []
+    for run in reversed(runs):
+        if run["status"] != "completed" or not run.get("report"):
+            continue
+        retrieval = run["report"].get("retrieval") or {}
+        run_experiments.append({
+            "Experiment": f"Sample run ({run['sample_size']} cases)",
+            "Mode": run["mode"],
+            "Top-K": retrieval.get("k", run["top_k"]),
+            "Recall@K": retrieval.get("recall_at_k", 0.0),
+            "Precision@K": retrieval.get("precision_at_k", 0.0),
+            "MRR": retrieval.get("mrr", 0.0),
+            "nDCG@K": retrieval.get("ndcg_at_k", 0.0),
+            "Leakage Rate": retrieval.get("permission_leakage_rate", 0.0),
+            "Evaluation Run ID": run["id"],
+            "Created At": run["completed_at"],
+        })
+    experiments = experiments + run_experiments
+    for run_experiment in run_experiments:
+        run = next(
+            item for item in runs if item["id"] == run_experiment["Evaluation Run ID"]
+        )
+        refusal = (run.get("report") or {}).get("refusal") or {}
+        trends.append({
+            "name": run_experiment["Experiment"],
+            "mode": run_experiment["Mode"],
+            "top_k": run_experiment["Top-K"],
+            "recall": run_experiment["Recall@K"],
+            "precision": run_experiment["Precision@K"],
+            "mrr": run_experiment["MRR"],
+            "ndcg": run_experiment["nDCG@K"],
+            "leakage": run_experiment["Leakage Rate"],
+            "refusal": 1.0 - (
+                refusal.get("false_answers", 0)
+                / max(refusal.get("total_unanswerable", 0), 1)
+            ),
         })
 
     return {
@@ -189,7 +290,40 @@ async def get_per_query_evaluations(
     ragas_by_query = {r.get("user_input", ""): r for r in ragas_records}
 
     all_queries: list[dict[str, Any]] = []
-    if baseline_path.is_file():
+    latest_run = await get_latest_completed_evaluation_run(user.tenant_id)
+    if (
+        latest_run
+        and latest_run["status"] == "completed"
+        and latest_run.get("report")
+    ):
+        report = latest_run["report"]
+        top_k = (report.get("retrieval") or {}).get("k", latest_run["top_k"])
+        for result in report.get("per_question", []):
+            scores = result.get("retrieval_scores") or {}
+            recall = scores.get(f"recall@{top_k}", 0.0)
+            expected_behavior = result.get("expected_behavior")
+            query_status = "passed" if recall == 1.0 else "partial" if recall > 0 else "failed"
+            if expected_behavior in ("no_answer", "deny"):
+                query_status = "passed" if result.get("is_refused") else "failed"
+            all_queries.append({
+                "test_id": result.get("test_id"),
+                "question": result.get("question"),
+                "role": result.get("role"),
+                "category": result.get("category"),
+                "expected_behavior": expected_behavior,
+                "status": query_status,
+                "recall_at_5": recall,
+                "precision_at_5": scores.get(f"precision@{top_k}", 0.0),
+                "mrr": scores.get("mrr", 0.0),
+                "ndcg_at_5": scores.get(f"ndcg@{top_k}", 0.0),
+                "gold_doc_ids": result.get("gold_doc_ids", []),
+                "retrieved_doc_ids": result.get("retrieved_doc_ids", []),
+                "retrieved_titles": result.get("retrieved_titles", []),
+                "generation_scores": result.get("generation_scores", {}),
+                "response": result.get("generated_response"),
+                "reference": result.get("reference_answer"),
+            })
+    elif baseline_path.is_file():
         try:
             with baseline_path.open(encoding="utf-8") as f:
                 for line in f:
@@ -277,23 +411,75 @@ async def get_error_analysis(
     }
 
 
-async def _run_eval_background_job(req: RunEvaluationRequest, tenant_name: str) -> None:
-    logger.info("Starting background evaluation benchmark run for %s...", tenant_name)
+@router.get("/runs/latest")
+async def get_latest_evaluation_run_status(
+    user: CurrentUser = Depends(require_admin_role),
+) -> dict[str, Any]:
+    run = await get_latest_evaluation_run(user.tenant_id)
+    return {"run": _run_status(run) if run else None}
+
+
+@router.get("/runs/{run_id}")
+async def get_evaluation_run_status(
+    run_id: UUID,
+    user: CurrentUser = Depends(require_admin_role),
+) -> dict[str, Any]:
+    run = await get_evaluation_run(run_id=str(run_id), tenant_id=user.tenant_id)
+    if not run:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluation run not found.")
+    return _run_status(run)
+
+
+async def _run_eval_background_job(
+    run_id: str,
+    req: RunEvaluationRequest,
+    tenant_id: str,
+) -> None:
+    logger.info("Starting background evaluation run %s for tenant %s.", run_id, tenant_id)
     try:
+        await update_evaluation_run(
+            run_id=run_id,
+            tenant_id=tenant_id,
+            status="running",
+        )
         report = await evaluate_dataset(
             limit=req.sample_size,
             top_k=req.top_k,
             mode=req.mode,
             candidate_limit=req.candidate_limit,
             rerank_pool_size=req.rerank_pool_size,
+            tenant_id=tenant_id,
+        )
+        await update_evaluation_run(
+            run_id=run_id,
+            tenant_id=tenant_id,
+            status="completed",
+            report=report.model_dump(mode="json"),
         )
         logger.info(
-            "Background evaluation completed successfully: Recall@%d=%.4f",
+            "Background evaluation run %s completed: Recall@%d=%.4f",
+            run_id,
             req.top_k,
             report.retrieval.recall_at_k,
         )
     except Exception as exc:
-        logger.error("Background evaluation run failed: %s", exc)
+        error_message = scrub_string(str(exc)).strip()[:1000]
+        if not error_message:
+            error_message = "Evaluation execution failed."
+        try:
+            await update_evaluation_run(
+                run_id=run_id,
+                tenant_id=tenant_id,
+                status="failed",
+                error_message=error_message,
+            )
+        except Exception as persist_exc:
+            logger.error(
+                "Evaluation run %s failed and its failure status could not be persisted (%s).",
+                run_id,
+                type(persist_exc).__name__,
+            )
+        logger.error("Evaluation run %s failed: %s", run_id, error_message)
 
 
 @router.post("/run", status_code=status.HTTP_202_ACCEPTED)
@@ -303,10 +489,23 @@ async def trigger_evaluation_run(
     user: CurrentUser = Depends(require_admin_role),
 ) -> dict[str, Any]:
     """Triggers an on-demand evaluation benchmark run in the background."""
-    background_tasks.add_task(_run_eval_background_job, request, "redwood_inference")
+    run, created = await create_evaluation_run(
+        tenant_id=user.tenant_id,
+        requested_by=user.id,
+        sample_size=request.sample_size,
+        mode=request.mode,
+        top_k=request.top_k,
+        candidate_limit=request.candidate_limit,
+        rerank_pool_size=request.rerank_pool_size,
+    )
+    if created:
+        background_tasks.add_task(
+            _run_eval_background_job,
+            run["id"],
+            request,
+            user.tenant_id,
+        )
     return {
-        "status": "queued",
-        "message": f"Evaluation benchmark run queued ({request.sample_size} cases, mode={request.mode}).",
-        "sample_size": request.sample_size,
-        "mode": request.mode,
+        "run": _run_status(run),
+        "deduplicated": not created,
     }

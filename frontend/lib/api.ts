@@ -1,3 +1,5 @@
+import type { EvaluationRun } from "./types";
+
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -77,7 +79,7 @@ export async function fetchErrorAnalysis(token: string) {
 export async function triggerEvaluationRun(
   token: string,
   payload: { sample_size?: number; mode?: string }
-) {
+): Promise<{ run: EvaluationRun; deduplicated: boolean }> {
   const headers = await getAuthHeaders(token);
   const res = await fetch(`${BACKEND_URL}/api/admin/evaluations/run`, {
     method: "POST",
@@ -88,8 +90,38 @@ export async function triggerEvaluationRun(
     }),
   });
   if (!res.ok) {
-    throw new Error(`Failed to trigger evaluation run: ${res.statusText}`);
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      body?.detail || `Failed to trigger evaluation run (${res.status}).`
+    );
   }
   return res.json();
 }
 
+export async function fetchLatestEvaluationRun(token: string): Promise<EvaluationRun | null> {
+  const headers = await getAuthHeaders(token);
+  const res = await fetch(`${BACKEND_URL}/api/admin/evaluations/runs/latest`, {
+    headers,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch latest evaluation run (${res.status}).`);
+  }
+  const data = await res.json();
+  return data.run;
+}
+
+export async function fetchEvaluationRun(
+  token: string,
+  runId: string
+): Promise<EvaluationRun> {
+  const headers = await getAuthHeaders(token);
+  const res = await fetch(
+    `${BACKEND_URL}/api/admin/evaluations/runs/${encodeURIComponent(runId)}`,
+    { headers, cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch evaluation run (${res.status}).`);
+  }
+  return res.json();
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import {
   fetchEvaluationSummary,
@@ -8,6 +8,8 @@ import {
   fetchQueryEvaluations,
   fetchErrorAnalysis,
   triggerEvaluationRun,
+  fetchLatestEvaluationRun,
+  fetchEvaluationRun,
 } from "../lib/api";
 import type {
   EvaluationSummary,
@@ -15,6 +17,7 @@ import type {
   QueryEvaluationsResponse,
   ErrorAnalysisResponse,
   QueryEvaluationItem,
+  EvaluationRun,
 } from "../lib/types";
 
 export default function AdminEvaluationDashboard() {
@@ -39,6 +42,12 @@ export default function AdminEvaluationDashboard() {
   const [isTriggering, setIsTriggering] = useState(false);
   const [triggerMessage, setTriggerMessage] = useState<string | null>(null);
   const [runSampleSize, setRunSampleSize] = useState<number>(10);
+  const [evaluationRun, setEvaluationRun] = useState<EvaluationRun | null>(null);
+  const [runPollingError, setRunPollingError] = useState<string | null>(null);
+  const [triggerError, setTriggerError] = useState(false);
+  const triggerLock = useRef(false);
+  const evaluationRunId = evaluationRun?.id;
+  const evaluationRunStatus = evaluationRun?.status;
 
   useEffect(() => {
     let ignore = false;
@@ -53,10 +62,11 @@ export default function AdminEvaluationDashboard() {
           throw new Error("No active authentication session.");
         }
 
-        const [summaryRes, historyRes, errRes] = await Promise.all([
+        const [summaryRes, historyRes, errRes, runRes] = await Promise.all([
           fetchEvaluationSummary(token),
           fetchEvaluationHistory(token),
           fetchErrorAnalysis(token),
+          fetchLatestEvaluationRun(token),
         ]);
 
         const queriesRes = await fetchQueryEvaluations(token, {
@@ -73,6 +83,7 @@ export default function AdminEvaluationDashboard() {
           setHistory(historyRes);
           setErrorAnalysis(errRes);
           setQueriesData(queriesRes);
+          setEvaluationRun(runRes);
           setIsLoading(false);
         }
       } catch (err: unknown) {
@@ -90,9 +101,55 @@ export default function AdminEvaluationDashboard() {
     };
   }, [statusFilter, roleFilter, categoryFilter, searchQuery, page, reloadKey]);
 
+  useEffect(() => {
+    if (!evaluationRunId || !["pending", "running"].includes(evaluationRunStatus ?? "")) {
+      return;
+    }
+
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const pollRun = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error("Authentication session expired while checking the run.");
+
+        const updatedRun = await fetchEvaluationRun(token, evaluationRunId);
+        if (cancelled) return;
+        setEvaluationRun(updatedRun);
+        setRunPollingError(null);
+        if (updatedRun.status === "completed") {
+          setTriggerMessage("Run completed. The dashboard now shows its persisted results.");
+          setReloadKey((key) => key + 1);
+        } else if (updatedRun.status === "failed") {
+          setTriggerMessage(null);
+        } else {
+          timeout = setTimeout(pollRun, 2000);
+        }
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setRunPollingError(
+          err instanceof Error ? err.message : "Unable to check evaluation run status."
+        );
+        timeout = setTimeout(pollRun, 5000);
+      }
+    };
+
+    timeout = setTimeout(pollRun, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [evaluationRunId, evaluationRunStatus]);
+
   const handleTriggerRun = async () => {
+    if (triggerLock.current) return;
+    triggerLock.current = true;
     setIsTriggering(true);
     setTriggerMessage(null);
+    setRunPollingError(null);
+    setTriggerError(false);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -102,11 +159,17 @@ export default function AdminEvaluationDashboard() {
         sample_size: runSampleSize,
         mode: "hybrid_rerank",
       });
-      setTriggerMessage(res.message || "Evaluation run started successfully in background.");
-      setTimeout(() => setTriggerMessage(null), 5000);
+      setEvaluationRun(res.run);
+      setTriggerMessage(
+        res.deduplicated
+          ? "An evaluation is already active for this tenant; showing that run."
+          : "Evaluation run accepted and queued."
+      );
     } catch (err: unknown) {
+      setTriggerError(true);
       setTriggerMessage(err instanceof Error ? err.message : "Failed to start evaluation run.");
     } finally {
+      triggerLock.current = false;
       setIsTriggering(false);
     }
   };
@@ -179,18 +242,46 @@ export default function AdminEvaluationDashboard() {
               </select>
               <button
                 onClick={handleTriggerRun}
-                disabled={isTriggering}
+                disabled={
+                  isTriggering ||
+                  (evaluationRun !== null &&
+                    ["pending", "running"].includes(evaluationRun.status))
+                }
                 className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50"
               >
-                {isTriggering ? "Queuing..." : "Trigger Run"}
+                {isTriggering ? "Submitting..." : "Run sample"}
               </button>
             </div>
           </div>
         </div>
 
-        {triggerMessage && (
-          <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 text-xs text-indigo-800 font-medium">
-            {triggerMessage}
+        {(evaluationRun || triggerMessage || runPollingError) && (
+          <div
+            className={`rounded-lg border p-3 text-xs ${
+              evaluationRun?.status === "failed" || triggerError
+                ? "bg-red-50 border-red-200 text-red-800"
+                : evaluationRun?.status === "completed"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-indigo-50 border-indigo-200 text-indigo-800"
+            }`}
+            role={evaluationRun?.status === "failed" || triggerError ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {evaluationRun && (
+              <p className="font-semibold">
+                Evaluation {evaluationRun.status}
+                {evaluationRun.status === "pending" && " — waiting to start"}
+                {evaluationRun.status === "running" && " — benchmark is executing"}
+                {evaluationRun.status === "completed" && " — results saved"}
+                {evaluationRun.status === "failed" && " — execution failed"}
+                <span className="ml-2 font-normal">Run {evaluationRun.id.slice(0, 8)}</span>
+              </p>
+            )}
+            {evaluationRun?.status === "failed" && evaluationRun.error_message && (
+              <p className="mt-1">{evaluationRun.error_message}</p>
+            )}
+            {triggerMessage && <p className="mt-1">{triggerMessage}</p>}
+            {runPollingError && <p className="mt-1">Status check: {runPollingError}</p>}
           </div>
         )}
 

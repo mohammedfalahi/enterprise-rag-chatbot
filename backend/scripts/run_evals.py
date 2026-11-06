@@ -27,7 +27,11 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.db.connection import close_db_pool, get_db_connection, init_db_pool
 from app.rag.hybrid_search import RetrievalResult, search_documents
-from app.eval.metrics.retrieval import compute_ranking_metrics_at_k, doc_id_to_uuid
+from app.eval.metrics.retrieval import (
+    compute_ranking_metrics_at_k,
+    compute_evidence_hit_at_k,
+    doc_id_to_uuid,
+)
 from app.eval.metrics.refusal import compute_refusal_metrics
 
 DEFAULT_GOLDEN_PATH = "/Users/falahi/datasets-test/data/golden.jsonl"
@@ -139,6 +143,11 @@ async def evaluate_golden(
                 expected_uuids,
                 k=top_k,
             )
+            evidence_m = compute_evidence_hit_at_k(
+                [result.content for result in results],
+                test.get("answer_facts", []),
+            )
+            metrics.update(evidence_m)
             query_metrics.append(metrics)
             category_metrics[category].append(metrics)
             role_metrics[role].append(metrics)
@@ -179,7 +188,7 @@ async def evaluate_golden(
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as f:
             for item in per_query_records:
-                f.write(json.dumps(item) + "\n")
+                f.write(json.dumps(item, allow_nan=False) + "\n")
         print(f"Saved {len(per_query_records)} per-query records to {out_path}")
 
     mean_recall = (

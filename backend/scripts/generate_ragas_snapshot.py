@@ -162,7 +162,7 @@ def _write_snapshot_checkpoint(
         for item in selected_records:
             row = checkpoint_rows.get(item["test_id"])
             if row is not None:
-                file.write(json.dumps(row) + "\n")
+                file.write(json.dumps(row, allow_nan=False) + "\n")
     temporary_path.replace(path)
 
 
@@ -276,20 +276,14 @@ async def build_snapshot(
             )
 
             if not results:
-                # If refusal triggered, fallback to dense candidates so Ragas has retrieved context to judge
-                print(f"  Note: refusal triggered, fetching dense candidates for evaluation")
-                results = await search_documents(
-                    query=q,
-                    tenant_id=tenant_id,
-                    user_roles=[role],
-                    top_k=top_k,
-                    mode="dense_only",
-                )
-
-            retrieved_contexts = [r.content for r in results] if results else ["No context retrieved."]
-            retrieved_titles = [r.title for r in results] if results else ["Unknown"]
-
-            response_text = await generate_llm_response(q, retrieved_contexts, retrieved_titles)
+                # Production path: when retrieval is refused, return production refusal with empty context
+                print(f"  Note: refusal gate triggered for {test_id} (score below threshold)")
+                retrieved_contexts = []
+                response_text = "I do not have enough verified information to answer that question based on your accessible documents."
+            else:
+                retrieved_contexts = [r.content for r in results]
+                retrieved_titles = [r.title for r in results]
+                response_text = await generate_llm_response(q, retrieved_contexts, retrieved_titles)
 
             output_rows_row = {
                 "user_input": q,

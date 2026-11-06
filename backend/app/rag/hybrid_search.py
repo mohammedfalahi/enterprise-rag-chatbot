@@ -11,9 +11,9 @@ from __future__ import annotations
 import asyncio
 import threading
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder
 
 from app.core.config import settings
@@ -99,6 +99,18 @@ class RetrievalResult(BaseModel):
     rerank_score: float
 
 
+class RetrievalDiagnostics(BaseModel):
+    dense_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    fts_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    rrf_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    reranked_candidates: list[dict[str, Any]] = Field(default_factory=list)
+    final_chunk_ids: list[str] = Field(default_factory=list)
+    refused: bool = False
+    top_rerank_score: float | None = None
+    min_rerank_score: float = -8.5
+    mode: str = "hybrid_rerank"
+
+
 @dataclass
 class _Candidate:
     chunk_id: str
@@ -131,6 +143,7 @@ async def search_documents(
     candidate_limit: int = 10,
     k_rrf: int = 60,
     rerank_pool_size: int = 5,
+    diagnostics: RetrievalDiagnostics | None = None,
 ) -> list[RetrievalResult]:
     """
     Search enterprise documents using DEV_AI's Retrieve-and-Rerank hybrid pipeline.
@@ -141,7 +154,7 @@ async def search_documents(
 
     Stage 1:
       a) Fetch Top-N using pgvector (Dense Semantic Search with local Qwen3 embeddings).
-      b) Fetch Top-N using tsvector (Sparse Lexical Search via Postgres plainto_tsquery).
+      b) Fetch Top-N using tsvector (Sparse Lexical Search via Postgres lexeme FTS).
       c) Merge ranks using Reciprocal Rank Fusion (RRF, default k=60).
     Stage 2:
       a) Non-blocking Rerank of Top-M fused candidates using MS-MARCO Cross-Encoder.
@@ -155,6 +168,10 @@ async def search_documents(
     """
     if min_rerank_score is None:
         min_rerank_score = settings.min_rerank_score
+
+    if diagnostics is not None:
+        diagnostics.min_rerank_score = min_rerank_score
+        diagnostics.mode = mode
 
     async with get_db_connection() as conn:
         async with conn.cursor() as cur:
@@ -220,6 +237,16 @@ async def search_documents(
                                 dense_rank=rank,
                                 dense_distance=float(distance),
                             )
+                if diagnostics is not None:
+                    diagnostics.dense_candidates = [
+                        {
+                            "rank": rank,
+                            "chunk_id": str(row[0]),
+                            "document_id": str(row[1]),
+                            "distance": float(row[5]),
+                        }
+                        for rank, row in enumerate(dense_rows, start=1)
+                    ]
                 dense_span.update(
                     output={
                         "dense_candidates_count": len(dense_rows),
@@ -244,18 +271,33 @@ async def search_documents(
                 async with get_db_connection() as conn:
                     async with conn.cursor() as cur:
                         # Enforce tenant isolation and RBAC in sparse retrieval
+                        # Disjunctive stemmed lexemes + exact conjunction bonus for robust FTS
                         await cur.execute(
                             f"""
+                            WITH q_text AS (
+                                SELECT %s::text AS raw_query
+                            ),
+                            lexemes AS (
+                                SELECT string_agg(lexeme, ' | ') AS q_or,
+                                       plainto_tsquery('english', (SELECT raw_query FROM q_text)) AS q_plain
+                                FROM q_text
+                                LEFT JOIN LATERAL unnest(to_tsvector('english', q_text.raw_query)) AS lexeme ON true
+                                GROUP BY q_text.raw_query
+                            )
                             SELECT dc.id, dc.document_id, d.title, dc.heading_path, dc.content,
-                                   ts_rank_cd(dc.fts, plainto_tsquery('english', %s)) AS rank
+                                   ts_rank_cd(dc.fts, to_tsquery('english', COALESCE(lexemes.q_or, ''))) +
+                                   CASE WHEN dc.fts @@ lexemes.q_plain THEN 1.0 ELSE 0.0 END AS rank
                             FROM document_chunks dc
-                            JOIN documents d ON dc.document_id = d.id
+                            JOIN documents d ON dc.document_id = d.id, lexemes
                             WHERE dc.tenant_id = %s AND dc.access_roles && %s
-                              AND dc.fts @@ plainto_tsquery('english', %s)
+                              AND (
+                                  (lexemes.q_or IS NOT NULL AND dc.fts @@ to_tsquery('english', lexemes.q_or))
+                                  OR (lexemes.q_or IS NULL AND dc.fts @@ lexemes.q_plain)
+                              )
                             ORDER BY rank DESC
                             LIMIT {sparse_limit};
                             """,
-                            (query, tenant_id, user_roles, query),
+                            (query, tenant_id, user_roles),
                         )
 
                         fts_rows = await cur.fetchall()
@@ -274,6 +316,16 @@ async def search_documents(
                                     fts_rank=rank,
                                     fts_score=float(ts_rank),
                                 )
+                if diagnostics is not None:
+                    diagnostics.fts_candidates = [
+                        {
+                            "rank": rank,
+                            "chunk_id": str(row[0]),
+                            "document_id": str(row[1]),
+                            "score": float(row[5]),
+                        }
+                        for rank, row in enumerate(fts_rows, start=1)
+                    ]
                 sparse_span.update(
                     output={
                         "sparse_candidates_count": len(fts_rows),
@@ -289,6 +341,9 @@ async def search_documents(
                 )
 
         if not candidates:
+            if diagnostics is not None:
+                diagnostics.refused = True
+                diagnostics.final_chunk_ids = []
             retriever_span.update(output={"results_count": 0, "refused": True})
             return []
 
@@ -373,6 +428,18 @@ async def search_documents(
                 fused_scores.items(), key=lambda item: item[1], reverse=True
             )
             top_fused = sorted_fused[:rerank_pool_size]
+            if diagnostics is not None:
+                diagnostics.rrf_candidates = [
+                    {
+                        "rank": rank,
+                        "chunk_id": str(chunk_id),
+                        "document_id": candidates[chunk_id].document_id,
+                        "score": round(score, 8),
+                        "dense_rank": candidates[chunk_id].dense_rank,
+                        "fts_rank": candidates[chunk_id].fts_rank,
+                    }
+                    for rank, (chunk_id, score) in enumerate(sorted_fused, start=1)
+                ]
             rrf_span.update(
                 output={
                     "fused_top_5": [
@@ -407,6 +474,10 @@ async def search_documents(
                 for chunk_id, _ in sorted_fused[:top_k]
                 if (c := candidates[chunk_id]) is not None
             ]
+            if diagnostics is not None:
+                diagnostics.refused = False
+                diagnostics.final_chunk_ids = [r.chunk_id for r in returned]
+                diagnostics.top_rerank_score = returned[0].rerank_score if returned else None
             retriever_span.update(
                 output={
                     "results_count": len(returned),
@@ -466,6 +537,21 @@ async def search_documents(
             final_results.sort(key=lambda x: x.rerank_score, reverse=True)
             top_score = final_results[0].rerank_score if final_results else None
             refused = top_score is None or top_score < min_rerank_score
+            if diagnostics is not None:
+                diagnostics.reranked_candidates = [
+                    {
+                        "rank": rank,
+                        "chunk_id": result.chunk_id,
+                        "document_id": result.document_id,
+                        "rerank_score": result.rerank_score,
+                        "rrf_score": result.rrf_score,
+                        "dense_rank": result.dense_rank,
+                        "fts_rank": result.fts_rank,
+                    }
+                    for rank, result in enumerate(final_results, start=1)
+                ]
+                diagnostics.top_rerank_score = top_score
+                diagnostics.refused = refused
             rerank_span.update(
                 output={
                     "top_rerank_score": top_score,
@@ -486,12 +572,18 @@ async def search_documents(
 
         # Refusal gate check on the absolute best candidate
         if not final_results or final_results[0].rerank_score < min_rerank_score:
+            if diagnostics is not None:
+                diagnostics.refused = True
+                diagnostics.final_chunk_ids = []
             retriever_span.update(
                 output={"results_count": 0, "refused": True, "top_rerank_score": top_score}
             )
             return []
 
         returned = final_results[:top_k]
+        if diagnostics is not None:
+            diagnostics.refused = False
+            diagnostics.final_chunk_ids = [r.chunk_id for r in returned]
         retriever_span.update(
             output={
                 "results_count": len(returned),
@@ -513,3 +605,39 @@ async def search_documents(
             }
         )
         return returned
+
+
+async def search_documents_with_diagnostics(
+    query: str,
+    tenant_id: str,
+    user_roles: list[str],
+    top_k: int = 3,
+    min_rerank_score: float | None = None,
+    *,
+    mode: RetrievalMode = "hybrid_rerank",
+    candidate_limit: int = 10,
+    k_rrf: int = 60,
+    rerank_pool_size: int = 5,
+) -> tuple[list[RetrievalResult], RetrievalDiagnostics]:
+    """
+    Search enterprise documents and return both final results and intermediate diagnostics.
+    Captures dense candidates, FTS candidates, RRF rankings, cross-encoder scores,
+    and refusal gate decisions for debugging and evaluation tracing.
+    """
+    diag = RetrievalDiagnostics(
+        min_rerank_score=min_rerank_score if min_rerank_score is not None else settings.min_rerank_score,
+        mode=mode,
+    )
+    results = await search_documents(
+        query=query,
+        tenant_id=tenant_id,
+        user_roles=user_roles,
+        top_k=top_k,
+        min_rerank_score=min_rerank_score,
+        mode=mode,
+        candidate_limit=candidate_limit,
+        k_rrf=k_rrf,
+        rerank_pool_size=rerank_pool_size,
+        diagnostics=diag,
+    )
+    return results, diag

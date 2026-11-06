@@ -115,15 +115,30 @@ async def main():
                 async with conn.cursor() as cur:
                     await cur.execute(
                         """
-                        SELECT dc.id, dc.document_id, d.title, ts_rank_cd(dc.fts, plainto_tsquery('english', %s)) AS rank
+                        WITH q_text AS (
+                            SELECT %s::text AS raw_query
+                        ),
+                        lexemes AS (
+                            SELECT string_agg(lexeme, ' | ') AS q_or,
+                                   plainto_tsquery('english', (SELECT raw_query FROM q_text)) AS q_plain
+                            FROM q_text
+                            LEFT JOIN LATERAL unnest(to_tsvector('english', q_text.raw_query)) AS lexeme ON true
+                            GROUP BY q_text.raw_query
+                        )
+                        SELECT dc.id, dc.document_id, d.title,
+                               ts_rank_cd(dc.fts, to_tsquery('english', COALESCE(lexemes.q_or, ''))) +
+                               CASE WHEN dc.fts @@ lexemes.q_plain THEN 1.0 ELSE 0.0 END AS rank
                         FROM document_chunks dc
-                        JOIN documents d ON dc.document_id = d.id
+                        JOIN documents d ON dc.document_id = d.id, lexemes
                         WHERE dc.tenant_id = %s AND dc.access_roles && %s
-                          AND dc.fts @@ plainto_tsquery('english', %s)
+                          AND (
+                              (lexemes.q_or IS NOT NULL AND dc.fts @@ to_tsquery('english', lexemes.q_or))
+                              OR (lexemes.q_or IS NULL AND dc.fts @@ lexemes.q_plain)
+                          )
                         ORDER BY rank DESC
                         LIMIT 20;
                         """,
-                        (q, tenant_id, [role], q)
+                        (q, tenant_id, [role])
                     )
                     fts_rows = await cur.fetchall()
 
@@ -194,7 +209,7 @@ async def main():
     # Save detailed error analysis report
     report_file = Path("evaluation_results/error_analysis_report.json")
     report_file.parent.mkdir(parents=True, exist_ok=True)
-    report_file.write_text(json.dumps(diagnosed_zero, indent=2), encoding="utf-8")
+    report_file.write_text(json.dumps(diagnosed_zero, indent=2, allow_nan=False), encoding="utf-8")
     print(f"\nDetailed per-failure diagnostics written to {report_file}")
 
     # Print representative examples per category

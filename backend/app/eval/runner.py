@@ -24,6 +24,7 @@ from app.eval.schemas import (
 )
 from app.eval.metrics.retrieval import (
     compute_ranking_metrics_at_k,
+    compute_evidence_hit_at_k,
     check_permission_leakage,
     doc_id_to_uuid,
 )
@@ -43,6 +44,7 @@ async def evaluate_dataset(
     golden_path: str | Path = DEFAULT_GOLDEN_PATH,
     injection_path: str | Path | None = DEFAULT_INJECTION_PATH,
     tenant_name: str = DEFAULT_TENANT_NAME,
+    tenant_id: str | None = None,
     top_k: int = 5,
     limit: int | None = None,
     mode: str = "hybrid_rerank",
@@ -56,31 +58,39 @@ async def evaluate_dataset(
     Executes unified evaluation across retrieval, RBAC permission leakage,
     refusal accuracy, and generation efficacy.
     """
-    tenant_id = str(uuid.uuid5(uuid.NAMESPACE_OID, tenant_name))
+    tenant_id = tenant_id or str(uuid.uuid5(uuid.NAMESPACE_OID, tenant_name))
     records: list[dict[str, Any]] = []
 
     # 1. Load Golden records
     gold_path = Path(golden_path)
-    if gold_path.is_file():
-        with gold_path.open(encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    records.append(json.loads(line))
-        if limit is not None and limit > 0:
-            records = records[:limit]
+    if not gold_path.is_file():
+        raise FileNotFoundError(f"Golden evaluation dataset not found: {gold_path}")
+    with gold_path.open(encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                records.append(json.loads(line))
+    if limit is not None:
+        if limit < 1:
+            raise ValueError("Evaluation sample size must be greater than zero.")
+        records = records[:limit]
+    if not records:
+        raise ValueError(f"Golden evaluation dataset contains no cases: {gold_path}")
 
     # 2. Load Injections if provided
     injection_records = []
     if injection_path:
         inj_path = Path(injection_path)
-        if inj_path.is_file():
-            with inj_path.open(encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        r = json.loads(line)
-                        r["is_injection"] = True
-                        r["expected_behavior"] = "deny"
-                        injection_records.append(r)
+        if not inj_path.is_file():
+            raise FileNotFoundError(f"Injection evaluation dataset not found: {inj_path}")
+        with inj_path.open(encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    r["is_injection"] = True
+                    r["expected_behavior"] = "deny"
+                    injection_records.append(r)
+        if not injection_records:
+            raise ValueError(f"Injection evaluation dataset contains no cases: {inj_path}")
 
     total_eval_records = records + injection_records
     query_ranking_metrics: list[dict[str, float]] = []
@@ -133,6 +143,8 @@ async def evaluate_dataset(
         scores: dict[str, float] = {}
         if expected_behavior in ("answer", "partial") and expected_uuids:
             scores = compute_ranking_metrics_at_k(retrieved_doc_ids, expected_uuids, k=top_k)
+            evidence_scores = compute_evidence_hit_at_k([r.content for r in results], test.get("answer_facts", []))
+            scores.update(evidence_scores)
             query_ranking_metrics.append(scores)
             category_metrics[category].append(scores)
             role_metrics[role].append(scores)
@@ -140,10 +152,12 @@ async def evaluate_dataset(
         per_question_results.append(
             PerQuestionResult(
                 test_id=test_id,
+                question_id=test.get("question_id"),
                 question=question,
                 role=role,
                 category=category,
                 expected_behavior=expected_behavior,
+                gold_doc_ids=gold_doc_ids,
                 retrieved_doc_ids=retrieved_doc_ids,
                 retrieved_chunk_ids=retrieved_chunk_ids,
                 retrieved_titles=retrieved_titles,
@@ -155,6 +169,10 @@ async def evaluate_dataset(
 
         if run_generation_eval and test.get("answer_facts") and results:
             ragas_input_records.append({
+                "test_id": test_id,
+                "question_id": test.get("question_id"),
+                "role": role,
+                "category": category,
                 "user_input": question,
                 "response": results[0].content[:200],  # Simplified placeholder if not generated
                 "retrieved_contexts": [r.content for r in results],
@@ -173,6 +191,8 @@ async def evaluate_dataset(
         recall_at_k=mean_of(query_ranking_metrics, f"recall@{top_k}"),
         mrr=mean_of(query_ranking_metrics, "mrr"),
         ndcg_at_k=mean_of(query_ranking_metrics, f"ndcg@{top_k}"),
+        evidence_hit_rate=mean_of(query_ranking_metrics, "evidence_hit"),
+        mean_facts_covered=mean_of(query_ranking_metrics, "facts_covered"),
         permission_leakage_count=total_leakage_count,
         permission_leakage_rate=round(total_leakage_count / len(records), 4) if records else 0.0,
     )
@@ -194,11 +214,13 @@ async def evaluate_dataset(
         ragas_res = evaluate_ragas_records(ragas_input_records)
         agg = ragas_res.get("aggregate_metrics", {})
         generation_metrics = GenerationMetrics(
-            faithfulness=agg.get("faithfulness", 0.0),
-            answer_relevancy=agg.get("answer_relevancy", 0.0),
-            answer_correctness=agg.get("answer_correctness", 0.0),
+            faithfulness=agg.get("faithfulness"),
+            answer_relevancy=agg.get("answer_relevancy"),
+            answer_correctness=agg.get("answer_correctness"),
             context_precision=agg.get("llm_context_precision_with_reference"),
             context_recall=agg.get("context_recall"),
+            metric_counts=ragas_res.get("metric_counts", {}),
+            timeout_details=ragas_res.get("timeout_details", []),
         )
 
     return EvaluationReport(

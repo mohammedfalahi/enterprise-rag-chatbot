@@ -75,6 +75,87 @@ def compute_ranking_metrics_at_k(
     }
 
 
+def compute_chunk_metrics_at_k(
+    retrieved_chunk_ids: list[str],
+    gold_chunk_ids: set[str],
+    k: int = 5,
+) -> dict[str, float]:
+    """
+    Computes precision@k, recall@k, mrr, and hit@k for retrieved chunk IDs against gold chunk IDs.
+    """
+    if k <= 0:
+        raise ValueError("k must be greater than zero")
+    if not gold_chunk_ids:
+        return {
+            f"chunk_precision@{k}": 0.0,
+            f"chunk_recall@{k}": 0.0,
+            "chunk_mrr": 0.0,
+            f"chunk_hit@{k}": 0.0,
+        }
+
+    top_chunks = retrieved_chunk_ids[:k]
+    relevant_ranks = [
+        rank
+        for rank, chunk_id in enumerate(top_chunks, start=1)
+        if chunk_id in gold_chunk_ids
+    ]
+
+    precision = len(relevant_ranks) / k
+    recall = len(relevant_ranks) / len(gold_chunk_ids)
+    mrr = 1.0 / relevant_ranks[0] if relevant_ranks else 0.0
+    hit = 1.0 if relevant_ranks else 0.0
+
+    return {
+        f"chunk_precision@{k}": precision,
+        f"chunk_recall@{k}": recall,
+        "chunk_mrr": mrr,
+        f"chunk_hit@{k}": hit,
+    }
+
+
+def compute_evidence_hit_at_k(
+    retrieved_chunk_contents: list[str],
+    answer_facts: list[str],
+    min_fact_coverage: float = 0.5,
+) -> dict[str, float]:
+    """
+    Computes evidence coverage by checking whether key factual terms from answer_facts
+    appear in the retrieved chunk contents. Differentiates superficial document hits
+    from actual evidence hits containing the required facts.
+    """
+    import re
+
+    if not answer_facts:
+        return {"evidence_hit": 1.0, "facts_covered": 1.0}
+    if not retrieved_chunk_contents:
+        return {"evidence_hit": 0.0, "facts_covered": 0.0}
+
+    combined_context = " ".join(retrieved_chunk_contents).lower()
+    covered = 0
+    stop = {
+        "that", "this", "with", "from", "have", "were", "been", "should", "would",
+        "could", "must", "when", "what", "which", "about", "after", "before", "also", "than",
+    }
+
+    for fact in answer_facts:
+        words = [
+            w for w in re.findall(r"\b[a-zA-Z0-9_\-\.]{4,}\b", fact.lower())
+            if w not in stop
+        ]
+        if not words:
+            covered += 1
+            continue
+        matches = sum(1 for w in words if w in combined_context)
+        if matches / len(words) >= 0.5:
+            covered += 1
+
+    coverage_rate = covered / len(answer_facts)
+    return {
+        "evidence_hit": 1.0 if coverage_rate >= min_fact_coverage else 0.0,
+        "facts_covered": round(coverage_rate, 4),
+    }
+
+
 async def check_permission_leakage(
     retrieved_document_ids: list[str],
     user_role: str,

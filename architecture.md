@@ -471,6 +471,13 @@ Recall; use custom Python metrics for retrieval ranking and security checks.
 Evaluation must not run inside live chat requests or read production conversation
 data.
 
+On-demand dashboard evaluations are stored in the tenant-scoped
+`evaluation_runs` table. Each run records its validated parameters, lifecycle
+status, safe failure message, and completed report. Only one pending or running
+evaluation may exist per tenant. The API derives the evaluation tenant from the
+authenticated server-side profile, and the dashboard polls the run status and
+reloads persisted metrics when execution completes.
+
 ### Security evaluation
 
 Measure:

@@ -14,6 +14,8 @@ class RetrievalMetrics(BaseModel):
     recall_at_k: float = Field(default=0.0, description="Recall@K")
     mrr: float = Field(default=0.0, description="Mean Reciprocal Rank")
     ndcg_at_k: float = Field(default=0.0, description="Normalized Discounted Cumulative Gain@K")
+    evidence_hit_rate: float = Field(default=0.0, description="Proportion of answerable queries where retrieved chunks contain evidence facts")
+    mean_facts_covered: float = Field(default=0.0, description="Average percentage of answer facts covered")
     permission_leakage_count: int = Field(default=0, description="Count of chunks returned outside user roles")
     permission_leakage_rate: float = Field(default=0.0, description="Leakage rate (must be 0.0%)")
 
@@ -31,11 +33,13 @@ class RefusalMetrics(BaseModel):
 
 
 class GenerationMetrics(BaseModel):
-    faithfulness: float = Field(default=0.0, description="Factual entailment to retrieved context (0-1)")
-    answer_relevancy: float = Field(default=0.0, description="Responsiveness to user question (0-1)")
-    answer_correctness: float = Field(default=0.0, description="Factual and semantic agreement with reference (0-1)")
+    faithfulness: float | None = Field(default=None, description="Factual entailment to retrieved context (0-1)")
+    answer_relevancy: float | None = Field(default=None, description="Responsiveness to user question (0-1)")
+    answer_correctness: float | None = Field(default=None, description="Factual and semantic agreement with reference (0-1)")
     context_precision: float | None = Field(default=None, description="Ragas LLM context precision with reference")
     context_recall: float | None = Field(default=None, description="Ragas context recall")
+    metric_counts: dict[str, dict[str, int]] = Field(default_factory=dict, description="Counts of n_scored and n_failed per metric")
+    timeout_details: list[dict[str, Any]] = Field(default_factory=list, description="Details of timed-out evaluations")
 
 
 class EvaluationTestCase(BaseModel):
@@ -51,17 +55,19 @@ class EvaluationTestCase(BaseModel):
 
 class PerQuestionResult(BaseModel):
     test_id: str
+    question_id: str | None = None
     question: str
     role: str
     category: str
     expected_behavior: str
+    gold_doc_ids: list[str] = Field(default_factory=list)
     retrieved_doc_ids: list[str] = Field(default_factory=list)
     retrieved_chunk_ids: list[str] = Field(default_factory=list)
     retrieved_titles: list[str] = Field(default_factory=list)
     is_refused: bool = False
     permission_leaked: bool = False
     retrieval_scores: dict[str, float] = Field(default_factory=dict)
-    generation_scores: dict[str, float] = Field(default_factory=dict)
+    generation_scores: dict[str, float | None] = Field(default_factory=dict)
     generated_response: str | None = None
     reference_answer: str | None = None
 

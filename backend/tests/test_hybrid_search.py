@@ -184,3 +184,54 @@ class TestQueryEmbeddingCache(unittest.TestCase):
             # Q1 was evicted, so querying it calls API
             get_query_embedding("Q1")
             self.assertEqual(mock_embed_texts.call_count, 4)
+
+    def test_search_documents_with_diagnostics_captures_all_pipeline_stages(self):
+        """search_documents_with_diagnostics returns candidates and scores from all intermediate stages."""
+        from app.rag.hybrid_search import search_documents_with_diagnostics
+
+        cursor = MagicMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock(return_value=("vector(1024)",))
+        cursor.fetchall = AsyncMock(
+            side_effect=[
+                # Dense rows: (id, doc_id, title, path, content, distance)
+                [("chunk-dense-1", "doc-1", "Title 1", ["Path"], "Dense text", 0.15)],
+                # Sparse FTS rows: (id, doc_id, title, path, content, score)
+                [("chunk-fts-1", "doc-2", "Title 2", ["Path"], "FTS text", 0.95)],
+            ]
+        )
+        connection = MagicMock()
+        connection.cursor.return_value.__aenter__.return_value = cursor
+        connection_context = MagicMock()
+        connection_context.__aenter__.return_value = connection
+
+        with (
+            patch("app.rag.hybrid_search.get_query_embedding", return_value=[0.1]),
+            patch(
+                "app.rag.hybrid_search.get_db_connection",
+                return_value=connection_context,
+            ),
+            patch(
+                "app.rag.hybrid_search._sync_cross_encoder_predict",
+                return_value=[3.1, -1.2],
+            ),
+        ):
+            results, diag = asyncio.run(
+                search_documents_with_diagnostics(
+                    query="What is the onboarding policy?",
+                    tenant_id="tenant-123",
+                    user_roles=["employee"],
+                    top_k=2,
+                )
+            )
+
+        self.assertEqual(len(results), 2)
+        self.assertFalse(diag.refused)
+        self.assertEqual(diag.top_rerank_score, 3.1)
+        self.assertEqual(len(diag.dense_candidates), 1)
+        self.assertEqual(diag.dense_candidates[0]["chunk_id"], "chunk-dense-1")
+        self.assertEqual(len(diag.fts_candidates), 1)
+        self.assertEqual(diag.fts_candidates[0]["chunk_id"], "chunk-fts-1")
+        self.assertEqual(len(diag.rrf_candidates), 2)
+        self.assertEqual(len(diag.reranked_candidates), 2)
+        self.assertEqual(diag.final_chunk_ids, ["chunk-dense-1", "chunk-fts-1"])

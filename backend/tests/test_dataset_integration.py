@@ -200,6 +200,53 @@ If anything goes wrong, contact the SRE team.
         self.assertIsNone(golden_results["permission_leakage_rate"])
         self.assertIsNone(injection_results["refusal_rate"])
 
+    def test_chunk_level_recall_and_evidence_hit_metrics(self):
+        from app.eval.metrics.retrieval import (
+            compute_chunk_metrics_at_k,
+            compute_evidence_hit_at_k,
+        )
+
+        # 1. Chunk metrics with gold chunk IDs
+        retrieved_chunks = [
+            "doc-1#0000",  # Irrelevant chunk
+            "doc-1#0005",  # Irrelevant chunk
+            "doc-1#0003",  # Evidence chunk
+        ]
+        gold_chunks = {"doc-1#0003"}
+        chunk_m = compute_chunk_metrics_at_k(retrieved_chunks, gold_chunks, k=3)
+        self.assertEqual(chunk_m["chunk_recall@3"], 1.0)
+        self.assertEqual(chunk_m["chunk_hit@3"], 1.0)
+        self.assertEqual(chunk_m["chunk_mrr"], 1 / 3)
+
+        # When evidence chunk #0003 is missed (only #0000 and #0005 retrieved)
+        missed_m = compute_chunk_metrics_at_k(
+            ["doc-1#0000", "doc-1#0005"], gold_chunks, k=2
+        )
+        self.assertEqual(missed_m["chunk_recall@2"], 0.0)
+        self.assertEqual(missed_m["chunk_hit@2"], 0.0)
+
+        # 2. Evidence hit calculation from answer_facts
+        facts = [
+            "An escalation email should be sent if not shipping a measurable artifact by day 30",
+            "An escalation email should be sent if access blockers persist for more than 48 hours",
+            "An escalation email should be sent if there are repeated missed meetings",
+        ]
+        # Chunk #0003 content
+        evidence_content = [
+            "Escalation triggers (email to p-ops + hiring manager): not shipping a measurable artifact by day 30, ongoing access blockers >48h, repeated missing meetings."
+        ]
+        hit_result = compute_evidence_hit_at_k(evidence_content, facts)
+        self.assertEqual(hit_result["evidence_hit"], 1.0)
+        self.assertGreaterEqual(hit_result["facts_covered"], 0.6)
+
+        # Overview chunk #0000 content without escalation triggers
+        irrelevant_content = [
+            "Purpose: quick, reusable working template to take a candidate through offer acceptance to contribution in 30/60/90 days."
+        ]
+        miss_result = compute_evidence_hit_at_k(irrelevant_content, facts)
+        self.assertEqual(miss_result["evidence_hit"], 0.0)
+        self.assertEqual(miss_result["facts_covered"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
